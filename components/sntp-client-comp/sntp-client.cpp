@@ -68,6 +68,15 @@ time_t SNTP::getTime()
 	return now;
 }
 
+tm* SNTP::getLocalTime()
+{
+    time_t rawtime = getTime();
+    struct tm *timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    return timeinfo;
+}
+
 void SNTP::setEpoch(uint32_t sec, uint32_t us)
 {
     sntp_set_system_time(sec, us);

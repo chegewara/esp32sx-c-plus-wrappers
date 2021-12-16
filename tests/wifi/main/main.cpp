@@ -80,7 +80,7 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->disconnect());
     vTaskDelay(500);
     ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->stop());
-    vTaskDelay(2000);
+    vTaskDelay(200);
     ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->enableSTA(SSID, PASSWORD, true));
 
     vTaskDelay(200);
@@ -98,4 +98,9 @@ extern "C" void app_main(void)
     }
     vTaskDelay(500);
     printf("time synced => %d\n", sntp.getEpoch());
+
+    struct tm *timeinfo = sntp.getLocalTime();
+    char buffer[80];
+    strftime(buffer, 80, "%d-%m-%Y %H:%M:%S GMT", timeinfo);
+    printf("current time: %s\n", buffer);
 }

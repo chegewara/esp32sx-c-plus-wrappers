@@ -15,8 +15,7 @@
 
 #define TAG "WiFi class"
 
-__attribute__((weak)) void wifi_event_handler(void *arg, esp_event_base_t event_base,
-                                              int32_t event_id, void *event_data)
+__attribute__((weak)) void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
     {
@@ -53,9 +52,7 @@ __attribute__((weak)) void wifi_event_handler(void *arg, esp_event_base_t event_
     }
 }
 
-WiFi::WiFi()
-{
-}
+WiFi::WiFi(){}
 
 esp_err_t WiFi::init()
 {
@@ -63,15 +60,9 @@ esp_err_t WiFi::init()
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK_WITHOUT_ABORT(esp_event_loop_create_default());
 
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &wifi_event_handler,
-                                                        this));
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, this));
 
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT,
-                                                        IP_EVENT_STA_GOT_IP,
-                                                        &wifi_event_handler,
-                                                        this));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, this));
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -85,6 +76,7 @@ esp_err_t WiFi::init()
 
     return err;
 }
+
 esp_err_t WiFi::enableAP(const char *ssid, const char *pass, uint8_t max_conn)
 {
     esp_err_t err;
