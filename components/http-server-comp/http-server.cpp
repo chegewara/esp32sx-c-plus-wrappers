@@ -1,61 +1,10 @@
 #include <stdio.h>
 #include "esp_log.h"
+#include <sys/param.h>
+
 #include "http-server.h"
 
 #define TAG "HTTP server"
-
-const char cacert_pem[] = {
-"-----BEGIN CERTIFICATE-----\n"
-"MIIDKzCCAhOgAwIBAgIUBxM3WJf2bP12kAfqhmhhjZWv0ukwDQYJKoZIhvcNAQEL\n"
-"BQAwJTEjMCEGA1UEAwwaRVNQMzIgSFRUUFMgc2VydmVyIGV4YW1wbGUwHhcNMTgx\n"
-"MDE3MTEzMjU3WhcNMjgxMDE0MTEzMjU3WjAlMSMwIQYDVQQDDBpFU1AzMiBIVFRQ\n"
-"UyBzZXJ2ZXIgZXhhbXBsZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB\n"
-"ALBint6nP77RCQcmKgwPtTsGK0uClxg+LwKJ3WXuye3oqnnjqJCwMEneXzGdG09T\n"
-"sA0SyNPwrEgebLCH80an3gWU4pHDdqGHfJQa2jBL290e/5L5MB+6PTs2NKcojK/k\n"
-"qcZkn58MWXhDW1NpAnJtjVniK2Ksvr/YIYSbyD+JiEs0MGxEx+kOl9d7hRHJaIzd\n"
-"GF/vO2pl295v1qXekAlkgNMtYIVAjUy9CMpqaQBCQRL+BmPSJRkXBsYk8GPnieS4\n"
-"sUsp53DsNvCCtWDT6fd9D1v+BB6nDk/FCPKhtjYOwOAZlX4wWNSZpRNr5dfrxKsb\n"
-"jAn4PCuR2akdF4G8WLUeDWECAwEAAaNTMFEwHQYDVR0OBBYEFMnmdJKOEepXrHI/\n"
-"ivM6mVqJgAX8MB8GA1UdIwQYMBaAFMnmdJKOEepXrHI/ivM6mVqJgAX8MA8GA1Ud\n"
-"EwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBADiXIGEkSsN0SLSfCF1VNWO3\n"
-"emBurfOcDq4EGEaxRKAU0814VEmU87btIDx80+z5Dbf+GGHCPrY7odIkxGNn0DJY\n"
-"W1WcF+DOcbiWoUN6DTkAML0SMnp8aGj9ffx3x+qoggT+vGdWVVA4pgwqZT7Ybntx\n"
-"bkzcNFW0sqmCv4IN1t4w6L0A87ZwsNwVpre/j6uyBw7s8YoJHDLRFT6g7qgn0tcN\n"
-"ZufhNISvgWCVJQy/SZjNBHSpnIdCUSJAeTY2mkM4sGxY0Widk8LnjydxZUSxC3Nl\n"
-"hb6pnMh3jRq4h0+5CZielA4/a+TdrNPv/qok67ot/XJdY3qHCCd8O2b14OVq9jo=\n"
-"-----END CERTIFICATE-----"
-};
-
-const char prvtkey_pem[] = {
-"-----BEGIN PRIVATE KEY-----\n"
-"MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCwYp7epz++0QkH\n"
-"JioMD7U7BitLgpcYPi8Cid1l7snt6Kp546iQsDBJ3l8xnRtPU7ANEsjT8KxIHmyw\n"
-"h/NGp94FlOKRw3ahh3yUGtowS9vdHv+S+TAfuj07NjSnKIyv5KnGZJ+fDFl4Q1tT\n"
-"aQJybY1Z4itirL6/2CGEm8g/iYhLNDBsRMfpDpfXe4URyWiM3Rhf7ztqZdveb9al\n"
-"3pAJZIDTLWCFQI1MvQjKamkAQkES/gZj0iUZFwbGJPBj54nkuLFLKedw7DbwgrVg\n"
-"0+n3fQ9b/gQepw5PxQjyobY2DsDgGZV+MFjUmaUTa+XX68SrG4wJ+DwrkdmpHReB\n"
-"vFi1Hg1hAgMBAAECggEAaTCnZkl/7qBjLexIryC/CBBJyaJ70W1kQ7NMYfniWwui\n"
-"f0aRxJgOdD81rjTvkINsPp+xPRQO6oOadjzdjImYEuQTqrJTEUnntbu924eh+2D9\n"
-"Mf2CAanj0mglRnscS9mmljZ0KzoGMX6Z/EhnuS40WiJTlWlH6MlQU/FDnwC6U34y\n"
-"JKy6/jGryfsx+kGU/NRvKSru6JYJWt5v7sOrymHWD62IT59h3blOiP8GMtYKeQlX\n"
-"49om9Mo1VTIFASY3lrxmexbY+6FG8YO+tfIe0tTAiGrkb9Pz6tYbaj9FjEWOv4Vc\n"
-"+3VMBUVdGJjgqvE8fx+/+mHo4Rg69BUPfPSrpEg7sQKBgQDlL85G04VZgrNZgOx6\n"
-"pTlCCl/NkfNb1OYa0BELqWINoWaWQHnm6lX8YjrUjwRpBF5s7mFhguFjUjp/NW6D\n"
-"0EEg5BmO0ePJ3dLKSeOA7gMo7y7kAcD/YGToqAaGljkBI+IAWK5Su5yldrECTQKG\n"
-"YnMKyQ1MWUfCYEwHtPvFvE5aPwKBgQDFBWXekpxHIvt/B41Cl/TftAzE7/f58JjV\n"
-"MFo/JCh9TDcH6N5TMTRS1/iQrv5M6kJSSrHnq8pqDXOwfHLwxetpk9tr937VRzoL\n"
-"CuG1Ar7c1AO6ujNnAEmUVC2DppL/ck5mRPWK/kgLwZSaNcZf8sydRgphsW1ogJin\n"
-"7g0nGbFwXwKBgQCPoZY07Pr1TeP4g8OwWTu5F6dSvdU2CAbtZthH5q98u1n/cAj1\n"
-"noak1Srpa3foGMTUn9CHu+5kwHPIpUPNeAZZBpq91uxa5pnkDMp3UrLIRJ2uZyr8\n"
-"4PxcknEEh8DR5hsM/IbDcrCJQglM19ZtQeW3LKkY4BsIxjDf45ymH407IQKBgE/g\n"
-"Ul6cPfOxQRlNLH4VMVgInSyyxWx1mODFy7DRrgCuh5kTVh+QUVBM8x9lcwAn8V9/\n"
-"nQT55wR8E603pznqY/jX0xvAqZE6YVPcw4kpZcwNwL1RhEl8GliikBlRzUL3SsW3\n"
-"q30AfqEViHPE3XpE66PPo6Hb1ymJCVr77iUuC3wtAoGBAIBrOGunv1qZMfqmwAY2\n"
-"lxlzRgxgSiaev0lTNxDzZkmU/u3dgdTwJ5DDANqPwJc6b8SGYTp9rQ0mbgVHnhIB\n"
-"jcJQBQkTfq6Z0H6OoTVi7dPs3ibQJFrtkoyvYAbyk36quBmNRjVh6rc8468bhXYr\n"
-"v/t+MeGJP/0Zw8v/X2CFll96\n"
-"-----END PRIVATE KEY-----"
-};
 
 HttpServer::HttpServer(uint16_t port)
 {
@@ -67,17 +16,14 @@ HttpServer::~HttpServer()
 {
 }
 
-void HttpServer::init(uint16_t ctrl_port)
+void HttpServer::init(uint16_t ctrl_port, size_t stack)
 {
     config = HTTPD_DEFAULT_CONFIG();
 
-    /* Use the URI wildcard matching function in order to
-     * allow the same handler to respond to multiple different
-     * target URIs which match the wildcard scheme */
     config.uri_match_fn = httpd_uri_match_wildcard;
-    config.max_open_sockets = 7;
-    config.stack_size = 10 * 1024;
-    config.max_uri_handlers = 15;
+    config.max_open_sockets = 3;
+    config.stack_size = stack;
+    config.max_uri_handlers = 10;
     config.server_port = _port;
     config.ctrl_port = ctrl_port;
 }
@@ -87,28 +33,25 @@ void HttpServer::init(httpd_config_t _config)
     config = _config;
 }
 
-void HttpServer::initSSL(const uint8_t* cacert_pem, int cacert_len, const uint8_t* prvtkey_pem, int prvtkey_len)
+void HttpServer::initSSL(const uint8_t *cacert_pem, int cacert_len, const uint8_t *prvtkey_pem, int prvtkey_len)
 {
 #ifdef CONFIG_ESP_HTTPS_SERVER_ENABLE
     config_ssl = HTTPD_SSL_CONFIG_DEFAULT();
 
     config_ssl.httpd.uri_match_fn = httpd_uri_match_wildcard;
-
     config_ssl.cacert_len = cacert_len;
     config_ssl.cacert_pem = cacert_pem;
     config_ssl.prvtkey_len = prvtkey_len;
-    config_ssl.prvtkey_pem = prvtkey_pem;    
-    // config_ssl.transport_mode = HTTPD_SSL_TRANSPORT_INSECURE;
-    printf("cert len: %d\n", config_ssl.cacert_len);
-    // config_ssl.httpd.max_open_sockets = 7;
-    // config_ssl.httpd.stack_size = 10 * 1024;
-    // config_ssl.httpd.max_uri_handlers = 15;
-    // config_ssl.httpd.server_port = _port;
-    // config_ssl.httpd.ctrl_port = ctrl_port;
-
+    config_ssl.prvtkey_pem = prvtkey_pem;
 #endif
 }
 
+#ifdef CONFIG_ESP_HTTPS_SERVER_ENABLE
+void HttpServer::initSSL(httpd_ssl_config_t config)
+{
+    config_ssl = config;
+}
+#endif
 esp_err_t HttpServer::startSSL()
 {
     esp_err_t err = ESP_FAIL;
@@ -120,15 +63,23 @@ esp_err_t HttpServer::startSSL()
 
 esp_err_t HttpServer::start()
 {
-    ESP_LOGI(TAG, "Starting HTTP Server");
-    if (httpd_start(&handle, &config) != ESP_OK) {
+    if (httpd_start(&handle, &config) != ESP_OK)
+    {
         ESP_LOGE(TAG, "Failed to start file server!");
-        // free(server_data->scratch);
-        // free(server_data);
         return ESP_FAIL;
     }
-
+    ESP_LOGI(TAG, "Starting HTTP Server");
     return ESP_OK;
+}
+
+esp_err_t HttpServer::stop()
+{
+    return httpd_stop(handle);
+}
+
+httpd_handle_t HttpServer::getHandle()
+{
+    return handle;
 }
 
 void HttpServer::setPort(uint16_t port)
@@ -137,16 +88,15 @@ void HttpServer::setPort(uint16_t port)
     config.server_port = port;
 }
 
-esp_err_t HttpServer::registerPath(const char* uri, request_handler_t fn, httpd_method_t method, bool is_websocket)
+esp_err_t HttpServer::registerPath(const char *uri, request_handler_t fn, httpd_method_t method, bool is_websocket)
 {
     esp_err_t err = ESP_OK;
 
-    httpd_uri_t path = {
-        .uri       = uri,
-        .method    = method,
-        .handler   = fn,
-        .user_ctx  = this,
-    };
+    httpd_uri_t path = {};
+    path.uri = uri;
+    path.method = method;
+    path.handler = fn;
+    path.user_ctx = this;
 
 #ifdef CONFIG_HTTPD_WS_SUPPORT
     path.is_websocket = is_websocket;
@@ -156,4 +106,163 @@ esp_err_t HttpServer::registerPath(const char* uri, request_handler_t fn, httpd_
     return err;
 }
 
+esp_err_t HttpServer::unregisterPath(const char *uri, httpd_method_t method)
+{
+    return httpd_unregister_uri_handler(handle, uri, method);
+}
 
+bool HttpServer::hasKey(httpd_req_t *req, const char *key)
+{
+    size_t len = httpd_req_get_url_query_len(req);
+    if (len > 0)
+    {
+        char *buf = (char *)calloc(len, 1);
+        char val[10] = {};
+        httpd_req_get_url_query_str(req, buf, len);
+        esp_err_t ret = httpd_query_key_value(buf, key, val, 10);
+        free(buf);
+        if (ret != ESP_ERR_NOT_FOUND && strlen(val) > 0)
+            return true;
+    }
+
+    return false;
+}
+
+esp_err_t HttpServer::getKey(httpd_req_t *req, const char *key, char *val, size_t len)
+{
+    if (hasKey(req, key))
+    {
+        size_t _len = httpd_req_get_url_query_len(req);
+        if (len > 0)
+        {
+            char *buf = (char *)calloc(_len + 1, 1);
+            esp_err_t err = httpd_req_get_url_query_str(req, buf, _len + 1);
+            if (err)
+            {
+                printf("len: %d, query err: %x\n", _len, err);
+                free(buf);
+                return err;
+            }
+            err = httpd_query_key_value(buf, key, val, len);
+            free(buf);
+            return err;
+        }
+    }
+    return ESP_FAIL;
+}
+
+bool HttpServer::hasQuery(httpd_req_t *req)
+{
+    char *content = (char *)malloc(500);
+
+    /* Truncate if content length larger than the buffer */
+    size_t len = MIN(req->content_len, 500);
+
+    int ret = httpd_req_recv(req, content, len);
+    if (ret <= 0)
+    { /* 0 return value indicates connection closed */
+        /* Check if timeout occurred */
+        if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+        {
+            httpd_resp_send_408(req);
+        }
+        free(content);
+        return false;
+    }
+
+    free(content);
+    return true;
+}
+
+int HttpServer::getQuery(httpd_req_t *req, char *buf, size_t len)
+{
+    size_t _len = MIN(req->content_len, len);
+
+    int ret = httpd_req_recv(req, buf, _len);
+    if (ret <= 0)
+    {
+        if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+        {
+            httpd_resp_send_408(req);
+        }
+    }
+
+    return ret;
+}
+
+esp_err_t HttpServer::sendError(httpd_req_t *req, httpd_err_code_t error, const char *usr_msg)
+{
+    return httpd_resp_send_err(req, error, usr_msg);
+}
+
+int HttpServer::getHeader(httpd_req_t *req, const char *field, char *val, size_t val_size)
+{
+    return httpd_req_get_hdr_value_str(req, field, val, val_size) == ESP_OK ? httpd_req_get_hdr_value_len(req, field) : ESP_FAIL;
+}
+
+esp_err_t HttpServer::setStatus(httpd_req_t *req, const char *status)
+{
+    return httpd_resp_set_status(req, status);
+}
+
+esp_err_t HttpServer::setContentType(httpd_req_t *req, const char *type)
+{
+    return httpd_resp_set_type(req, type);
+}
+
+esp_err_t HttpServer::setHeader(httpd_req_t *req, const char *field, const char *value)
+{
+    return httpd_resp_set_hdr(req, field, value);
+}
+
+esp_err_t HttpServer::send(httpd_req_t *req, const char *buf, ssize_t buf_len)
+{
+    return httpd_resp_send(req, buf, buf_len);
+}
+
+esp_err_t HttpServer::sendText(httpd_req_t *req, const char *str)
+{
+    return httpd_resp_sendstr(req, str);
+}
+
+esp_err_t HttpServer::sendChunk(httpd_req_t *req, const char *buf, ssize_t buf_len)
+{
+    return httpd_resp_send_chunk(req, buf, buf_len);
+}
+
+#ifdef CONFIG_HTTPD_WS_SUPPORT
+esp_err_t HttpServer::wsGetPacket(httpd_req_t *req, httpd_ws_frame_t *ws_pkt, void *buf, size_t max_len)
+{
+    esp_err_t err = ESP_OK;
+    memset(ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt->payload = (uint8_t *)buf;
+    err = httpd_ws_recv_frame(req, ws_pkt, max_len);
+    return err;
+}
+
+esp_err_t HttpServer::wsSendPacket(httpd_req_t *req, httpd_ws_frame_t *ws_pkt)
+{
+    esp_err_t err = ESP_OK;
+    err = httpd_ws_send_frame(req, ws_pkt);
+    return err;
+}
+
+esp_err_t HttpServer::wsSendAsync(int fd, httpd_ws_frame_t *ws_pkt)
+{
+    esp_err_t err = ESP_OK;
+    err = httpd_ws_send_frame_async(handle, fd, ws_pkt);
+    return err;
+}
+
+httpd_ws_frame_t *HttpServer::buildPacket(const void *payload, size_t len, httpd_ws_type_t type, bool fragmented, bool final)
+{
+    httpd_ws_frame_t *frame = new httpd_ws_frame_t();
+    frame->payload = (uint8_t *)payload;
+    frame->len = len;
+    frame->type = type;
+    frame->fragmented = fragmented;
+    frame->final = final;
+    return frame;
+}
+
+#endif
