@@ -28,7 +28,7 @@ public:
     nvs_iterator_t next();
     nvs_iterator_t valueInfo(nvs_entry_info_t *out_info);
     void release();
-
+    void dump();
 
     esp_err_t getString(const char* key, char* value, size_t* len);
     esp_err_t getValue(const char* key, int8_t* value);

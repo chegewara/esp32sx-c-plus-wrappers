@@ -89,6 +89,37 @@ void NVS::release()
     nvs_release_iterator(itr);
 }
 
+void NVS::dump()
+{
+    nvs_iterator_t it;
+    do{
+        nvs_entry_info_t info;
+        it = valueInfo(&info);
+        if(it) {
+            printf("namespace: %s, key '%s', type %d \n", info.namespace_name, info.key, info.type);
+
+            char str[128] = {};
+            size_t len = 128;
+            uint8_t val = 0;
+            if(info.type == NVS_TYPE_STR) 
+            {
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getString(info.key, str, &len));
+                printf("key: %s, value: %s\n", info.key, str);
+            }
+            else if(info.type == NVS_TYPE_BLOB) 
+            {
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getBlob(info.key, str, &len));
+                printf("key: %s, value: %s\n", info.key, str);
+            }
+            else 
+            {
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getValue(info.key, &val));
+                printf("key: %s, value: %d\n", info.key, val);
+            }
+        }
+    }while(it != NULL) ;
+    release();
+}
 
 //-----------------------get value by type------------------------//
 esp_err_t NVS::getString(const char* key, char* value, size_t* len)
