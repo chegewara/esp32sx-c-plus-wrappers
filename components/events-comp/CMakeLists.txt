@@ -1,2 +1,2 @@
-idf_component_register(SRCS "event_loop.cpp" "event.cpp"
+idf_component_register(SRCS "event_loop.cpp"
                     INCLUDE_DIRS "include")
