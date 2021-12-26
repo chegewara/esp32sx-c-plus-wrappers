@@ -37,18 +37,3 @@ public:
     esp_err_t dump(FILE* file);
 };
 
-class Event
-{
-private:
-    
-public:
-    Event();
-    ~Event();
-
-public:
-    void addBaseID();
-    void addEventID();
-};
-
-    // return esp_err_to_name(error);
-

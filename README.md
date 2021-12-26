@@ -29,6 +29,10 @@ NOTE: i am always trying to make components compatible with esp-idf master branc
 19. freertos tasks      `done + wip`
 20. partitions          `???`
 21. base64              ``
+22. event loop          `done + wip`
+23. timers              `done + wip`
+
+
 
 ---
 

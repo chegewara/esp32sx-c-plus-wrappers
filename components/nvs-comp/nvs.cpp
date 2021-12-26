@@ -96,11 +96,8 @@ void NVS::dump()
         nvs_entry_info_t info;
         it = valueInfo(&info);
         if(it) {
-            printf("namespace: %s, key '%s', type %d \n", info.namespace_name, info.key, info.type);
-
             char str[128] = {};
             size_t len = 128;
-            uint8_t val = 0;
             if(info.type == NVS_TYPE_STR) 
             {
                 ESP_ERROR_CHECK_WITHOUT_ABORT(getString(info.key, str, &len));
@@ -111,11 +108,55 @@ void NVS::dump()
                 ESP_ERROR_CHECK_WITHOUT_ABORT(getBlob(info.key, str, &len));
                 printf("key: %s, value: %s\n", info.key, str);
             }
-            else 
+            else  if(info.type == NVS_TYPE_U8)
             {
+                uint8_t val = 0;
                 ESP_ERROR_CHECK_WITHOUT_ABORT(getValue(info.key, &val));
                 printf("key: %s, value: %d\n", info.key, val);
             }
+            else  if(info.type == NVS_TYPE_I8)
+            {
+                int8_t val = 0;
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getValue(info.key, &val));
+                printf("key: %s, value: %d\n", info.key, val);
+            }
+            else  if(info.type == NVS_TYPE_U16)
+            {
+                uint16_t val = 0;
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getValue(info.key, &val));
+                printf("key: %s, value: %d\n", info.key, val);
+            }
+            else  if(info.type == NVS_TYPE_I16)
+            {
+                int16_t val = 0;
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getValue(info.key, &val));
+                printf("key: %s, value: %d\n", info.key, val);
+            }
+            else  if(info.type == NVS_TYPE_U32)
+            {
+                uint32_t val = 0;
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getValue(info.key, &val));
+                printf("key: %s, value: %d\n", info.key, val);
+            }
+            else  if(info.type == NVS_TYPE_I32)
+            {
+                int val = 0;
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getValue(info.key, &val));
+                printf("key: %s, value: %d\n", info.key, val);
+            }
+            else  if(info.type == NVS_TYPE_U64)
+            {
+                uint64_t val = 0;
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getValue(info.key, &val));
+                printf("key: %s, value: %lld\n", info.key, val);
+            }
+            else  if(info.type == NVS_TYPE_I64)
+            {
+                int64_t val = 0;
+                ESP_ERROR_CHECK_WITHOUT_ABORT(getValue(info.key, &val));
+                printf("key: %s, value: %lld\n", info.key, val);
+            }
+
         }
     }while(it != NULL) ;
     release();
@@ -262,8 +303,3 @@ esp_err_t NVS::setBlob(const char* key,  const void *value, size_t length)
     err = nvs_set_blob(my_handle, key, value, length);
     return err;
 }
-
-
-
-
-

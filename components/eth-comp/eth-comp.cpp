@@ -34,8 +34,6 @@ esp_err_t ETH::init(uint8_t type)
     phy_config = (eth_phy_config_t)ETH_PHY_DEFAULT_CONFIG();
     mac_config = (eth_mac_config_t)ETH_MAC_DEFAULT_CONFIG();
     eth_netif = esp_netif_new(&cfg);
-    // Set default handlers to process TCP/IP stuffs
-    // ESP_ERROR_CHECK_WITHOUT_ABORT(esp_eth_set_default_handlers(eth_netif));
 
     phy_config.phy_addr = 0;
     phy_config.reset_gpio_num = pin_phy_reset;
@@ -120,13 +118,11 @@ bool ETH::setConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32
 
     err = esp_netif_dhcpc_stop(eth_netif);
     if(err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED){
-        // log_e("DHCP could not be stopped! Error: %d", err);
         return false;
     }
 
     err = esp_netif_set_ip_info(eth_netif, &info);
     if(err != ESP_OK){
-        // log_e("STA IP could not be configured! Error: %d", err);
         return false;
     }
     
@@ -135,7 +131,6 @@ bool ETH::setConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32
     } else {
         err = esp_netif_dhcpc_start(eth_netif);
         if(err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED){
-            // log_w("DHCP could not be started! Error: %d", err);
             return false;
         }
         staticIP = false;
@@ -234,4 +229,9 @@ bool ETH::setConfig(const char* local_ip, const char* gateway, const char* subne
 
 
     return setConfig(_local_ip, _gateway, _subnet, _dns1, _dns2);
+}
+
+esp_err_t ETH::getMAC(uint8_t* mac)
+{
+    return esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac);
 }

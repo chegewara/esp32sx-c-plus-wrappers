@@ -36,7 +36,7 @@ esp_err_t EventLoop::initDefault()
     esp_err_t err = ESP_OK;
     if (!default_running)
     {
-        err = esp_event_loop_create_default() == ESP_OK;
+        err = esp_event_loop_create_default();
     }
 
     default_running = err == ESP_OK || err == ESP_ERR_INVALID_STATE;
@@ -62,6 +62,7 @@ esp_err_t EventLoop::registerEvent(esp_event_handler_t event_handler, esp_event_
 
 esp_err_t EventLoop::registerEventDefault(esp_event_handler_t event_handler, esp_event_base_t event_base, int32_t event_id, void *event_handler_arg)
 {
+    initDefault();
     return esp_event_handler_instance_register(event_base, event_id, event_handler, event_handler_arg, NULL);
 }
 

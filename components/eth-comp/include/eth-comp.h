@@ -40,5 +40,6 @@ public:
     esp_err_t getDuplex(void *data);
     bool setConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32_t dns1, uint32_t dns2);
     bool setConfig(const char* local_ip, const char* gateway, const char* subnet, const char* dns1, const char* dns2);
+    esp_err_t getMAC(uint8_t* mac);
 };
 
