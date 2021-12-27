@@ -28,7 +28,6 @@ public:
 
 public:
     bool create(int stack = 3000, uint8_t prio = 5, void *arg = NULL, bool _static = false);
-    // bool createStatic(int stack = 3000, uint8_t prio = 5, void* arg = NULL);
     void remove();
     void suspend();
     void resume();
