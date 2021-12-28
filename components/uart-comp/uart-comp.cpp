@@ -30,11 +30,14 @@ esp_err_t UART::init()
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .rx_flow_ctrl_thresh = 0,
         .source_clk = UART_SCLK_APB,
     };
     //Install UART driver, and get the queue.
-    uart_driver_install(port_num, BUF_SIZE * 2, BUF_SIZE * 2, 10, &uart_queue, 0);
-    uart_param_config(port_num, &uart_config);
+    err = uart_driver_install(port_num, BUF_SIZE * 2, BUF_SIZE * 2, 10, &uart_queue, 0);
+    if(err) return err;
+    err = uart_param_config(port_num, &uart_config);
+    if(err) return err;
 
     return setPins();
 }
@@ -43,8 +46,10 @@ esp_err_t UART::init(uart_config_t* uart_config)
 {
     esp_err_t err = ESP_OK;
     //Install UART driver, and get the queue.
-    uart_driver_install(port_num, BUF_SIZE * 2, BUF_SIZE * 2, 20, &uart_queue, 0);
-    uart_param_config(port_num, uart_config);
+    err = uart_driver_install(port_num, BUF_SIZE * 2, BUF_SIZE * 2, 20, &uart_queue, 0);
+    if(err) return err;
+    err = uart_param_config(port_num, uart_config);
+    if(err) return err;
 
     return setPins();
 }
@@ -93,4 +98,25 @@ esp_err_t UART::baudrate(uint32_t baudrate)
 BaseType_t UART::waitRX(uart_event_t *event, TickType_t ticks_to_wait)
 {
     return xQueueReceive(uart_queue, (void * )event, ticks_to_wait);
+}
+
+esp_err_t UART::detectPattern(char c, uint8_t num, size_t size)
+{
+    uart_pattern_queue_reset(port_num, size);
+    return uart_enable_pattern_det_baud_intr(port_num, c, num, 8, 2, 2);
+}
+
+esp_err_t UART::disablePattern()
+{
+    return uart_disable_pattern_det_intr(port_num);
+}
+
+int UART::getNextPattern()
+{
+    return uart_pattern_pop_pos(port_num);
+}
+
+bool UART::checkNextPattern()
+{
+    return uart_pattern_get_pos(port_num) != -1;
 }

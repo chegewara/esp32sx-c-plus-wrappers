@@ -30,14 +30,14 @@ int Base64::decode(const char *src, size_t slen, char *dst, size_t dlen)
 int Base64::encodedSize(const char *src, size_t slen)
 {
     size_t olen = 0;
-    int ret = mbedtls_base64_encode(NULL, 0, &olen, (const uint8_t*)src, slen);
+    mbedtls_base64_encode(NULL, 0, &olen, (const uint8_t*)src, slen);
     return olen;
 }
 
 int Base64::decodedSize(const char *src, size_t slen)
 {
     size_t olen = 0;
-    int ret = mbedtls_base64_decode(NULL, 0, &olen, (const uint8_t*)src, slen);
+    mbedtls_base64_decode(NULL, 0, &olen, (const uint8_t*)src, slen);
     return olen;
 }
 

@@ -105,7 +105,7 @@ bool ETH::setConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32
 {
     esp_err_t err = ESP_OK;
     esp_netif_ip_info_t info;
-	bool staticIP;
+	// bool staticIP;
     if(local_ip != (uint32_t)0x00000000 && local_ip != IPADDR_NONE){
         info.ip.addr = local_ip;
         info.gw.addr = gateway;
@@ -117,7 +117,7 @@ bool ETH::setConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32
 	}
 
     err = esp_netif_dhcpc_stop(eth_netif);
-    if(err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED){
+    if(err != ESP_OK && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STOPPED){
         return false;
     }
 
@@ -127,13 +127,13 @@ bool ETH::setConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32
     }
     
     if(info.ip.addr){
-        staticIP = true;
+        // staticIP = true;
     } else {
         err = esp_netif_dhcpc_start(eth_netif);
-        if(err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED){
+        if(err != ESP_OK && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STARTED){
             return false;
         }
-        staticIP = false;
+        // staticIP = false;
     }
 
     ip_addr_t dns;

@@ -61,7 +61,9 @@ void Provision::init()
     /* Configuration for the provisioning manager */
     wifi_prov_mgr_config_t config = {
         .scheme = wifi_prov_scheme_softap,
-        .scheme_event_handler = WIFI_PROV_EVENT_HANDLER_NONE};
+        .scheme_event_handler = WIFI_PROV_EVENT_HANDLER_NONE,
+        .app_event_handler = WIFI_PROV_EVENT_HANDLER_NONE
+    };
     ESP_ERROR_CHECK(wifi_prov_mgr_init(config));
 
     /* Register our event handler for Wi-Fi, IP and Provisioning related events */

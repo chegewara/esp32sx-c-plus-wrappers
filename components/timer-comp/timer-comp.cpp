@@ -25,6 +25,8 @@ esp_err_t Timer::init(const timer_config_t *_config)
 {
     if(soft_timer) return ESP_FAIL;
     esp_err_t err = timer_init(group, timer_id, _config);
+    if(err) return err;
+
     timer_set_counter_value(group, timer_id, 0);
     config = *_config;
 

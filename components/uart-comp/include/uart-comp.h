@@ -27,6 +27,10 @@ public:
     esp_err_t baudrate(uint32_t baudrate);
 
     BaseType_t waitRX(uart_event_t* event, TickType_t ticks_to_wait = 100);
+    esp_err_t detectPattern(char c = '\r', uint8_t num = 1, size_t size = 10);
+    esp_err_t disablePattern();
+    int getNextPattern();
+    bool checkNextPattern();
 };
 
 

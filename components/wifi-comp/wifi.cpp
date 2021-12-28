@@ -35,11 +35,13 @@ __attribute__((weak)) void wifi_event_handler(void *arg, esp_event_base_t event_
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED)
     {
         wifi_event_sta_connected_t *event = (wifi_event_sta_connected_t *)event_data;
+        (void) event;
         ESP_LOGI(TAG, "station connected");
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         wifi_event_sta_disconnected_t *event = (wifi_event_sta_disconnected_t *)event_data;
+        (void) event;
         ESP_LOGI(TAG, "station disconnected");
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)

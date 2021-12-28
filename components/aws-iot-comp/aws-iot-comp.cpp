@@ -164,12 +164,11 @@ IoT_Error_t AwsIoT::publish(const char* topic, IoT_Publish_Message_Params params
 
 IoT_Error_t AwsIoT::publish(const char* topic, const char* payload, QoS qos)
 {
-    IoT_Publish_Message_Params params = {
-        .qos = qos,
-        .isRetained = 0,
-        .payload = (void *) payload,
-        .payloadLen = strlen(payload),
-    };
+    IoT_Publish_Message_Params params = { };
+    params.qos = qos,
+    params.isRetained = 0,
+    params.payload = (void *) payload,
+    params.payloadLen = strlen(payload),
 
     xSemaphoreTake(yieldSemaphore, 100 / portTICK_RATE_MS);
     IoT_Error_t rc = aws_iot_mqtt_publish(&client, topic, strlen(topic), &params);

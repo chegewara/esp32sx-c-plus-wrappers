@@ -1,5 +1,5 @@
 #pragma once
-#ifdef CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
