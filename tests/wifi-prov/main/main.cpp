@@ -9,6 +9,7 @@
 #include "nvs_comp.h"
 #include "wifi.h"
 #include "wifi-prov.h"
+#include "events.h"
 
 #define TAG "main"
 
@@ -68,6 +69,9 @@ void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id
 extern "C" void app_main(void)
 {
     esp_log_level_set("wifi", ESP_LOG_NONE);
+    EventLoop::registerEventDefault(wifi_event_handler, WIFI_EVENT, ESP_EVENT_ANY_ID, NULL);
+    EventLoop::registerEventDefault(wifi_event_handler, IP_EVENT, IP_EVENT_STA_GOT_IP, NULL);
+
     ESP_ERROR_CHECK(nvs.init());
     wifi_itf = new WiFi();
     wifi_itf->init();
@@ -75,7 +79,7 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->enableSTA());
     ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->enableAP("provisioning"));
 
-    provisioning.init();
+    ESP_ERROR_CHECK_WITHOUT_ABORT(provisioning.init());
     if (!provisioning.isProvisioned())
     {
         ESP_ERROR_CHECK_WITHOUT_ABORT(provisioning.customCreate("custom-data"));

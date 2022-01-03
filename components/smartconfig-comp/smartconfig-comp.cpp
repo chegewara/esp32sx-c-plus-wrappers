@@ -19,7 +19,8 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         ESP_LOGI(TAG, "SSID:%s", evt->ssid);
         ESP_LOGI(TAG, "PASSWORD:%s", evt->password);
         if (evt->type == SC_TYPE_ESPTOUCH_V2) {
-            ESP_ERROR_CHECK( esp_smartconfig_get_rvd_data(rvd_data, sizeof(rvd_data)) );
+            esp_err_t err = ESP_OK;
+            ESP_ERROR_CHECK_WITHOUT_ABORT(err =  esp_smartconfig_get_rvd_data(rvd_data, sizeof(rvd_data)) );
             ESP_LOGI(TAG, "RVD_DATA:");
             for (int i=0; i<33; i++) {
                 printf("%02x ", rvd_data[i]);
@@ -45,7 +46,7 @@ esp_err_t Smartconfig::start()
     const smartconfig_start_config_t config = SMARTCONFIG_START_CONFIG_DEFAULT();
     err = esp_smartconfig_start(&config);
 
-    ESP_ERROR_CHECK( esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, event_handler, this) );
+    ESP_ERROR_CHECK_WITHOUT_ABORT(err =  esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, event_handler, this) );
 
     return err;
 }

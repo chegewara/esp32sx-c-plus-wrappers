@@ -7,6 +7,7 @@
 
 #include "eth-comp.h"
 #include "nvs_comp.h"
+#include "events.h"
 
 #define	PIN_PHY_POWER	12
 #define TAG "main"
@@ -43,8 +44,7 @@ static void eth_event_handler(void *arg, esp_event_base_t event_base, int32_t ev
 }
 
 /** Event handler for IP_EVENT_ETH_GOT_IP */
-static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
-                                 int32_t event_id, void *event_data)
+static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
     const esp_netif_ip_info_t *ip_info = &event->ip_info;
@@ -61,11 +61,11 @@ extern "C" void app_main(void)
 {
     nvs = new NVS();
     ESP_ERROR_CHECK(nvs->init());
+    EventLoop::registerEventDefault(eth_event_handler, ETH_EVENT, ESP_EVENT_ANY_ID, NULL);
+    EventLoop::registerEventDefault(got_ip_event_handler, IP_EVENT, IP_EVENT_ETH_GOT_IP, NULL);
 
     eth = new ETH(PIN_PHY_POWER);
     eth->init();
-    esp_event_handler_register(ETH_EVENT, ESP_EVENT_ANY_ID, eth_event_handler, NULL);
-    esp_event_handler_register(IP_EVENT, IP_EVENT_ETH_GOT_IP, got_ip_event_handler, NULL);
     eth->start();
 
     uint32_t speed;

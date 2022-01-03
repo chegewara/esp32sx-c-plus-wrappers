@@ -3,8 +3,10 @@
 #include "esp_log.h"
 #include "wifi_provisioning/scheme_softap.h"
 #include "esp_wifi.h"
+#include "esp_check.h"
 
 #include "wifi-prov.h"
+#include "events.h"
 
 #define TAG "Provision"
 
@@ -21,10 +23,8 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
         case WIFI_PROV_CRED_RECV:
         {
             wifi_sta_config_t *wifi_sta_cfg = (wifi_sta_config_t *)event_data;
-            ESP_LOGI(TAG, "Received Wi-Fi credentials"
-                          "\n\tSSID     : %s\n\tPassword : %s",
-                     (const char *)wifi_sta_cfg->ssid,
-                     (const char *)wifi_sta_cfg->password);
+            ESP_LOGI(TAG, "Received Wi-Fi credentials\n\tSSID     : %s\n\tPassword : %s",
+                     (const char *)wifi_sta_cfg->ssid, (const char *)wifi_sta_cfg->password);
             break;
         }
         case WIFI_PROV_CRED_FAIL:
@@ -56,7 +56,7 @@ Provision::~Provision()
 {
 }
 
-void Provision::init()
+esp_err_t Provision::init()
 {
     /* Configuration for the provisioning manager */
     wifi_prov_mgr_config_t config = {
@@ -64,19 +64,18 @@ void Provision::init()
         .scheme_event_handler = WIFI_PROV_EVENT_HANDLER_NONE,
         .app_event_handler = WIFI_PROV_EVENT_HANDLER_NONE
     };
-    ESP_ERROR_CHECK(wifi_prov_mgr_init(config));
-
+    ESP_RETURN_ON_ERROR(wifi_prov_mgr_init(config), TAG, "failed to init");
+    EventLoop::initDefault();
     /* Register our event handler for Wi-Fi, IP and Provisioning related events */
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_PROV_EVENT, ESP_EVENT_ANY_ID, &event_handler, this));
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, this));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, this));
+    ESP_RETURN_ON_ERROR(EventLoop::registerEventDefault(event_handler, WIFI_PROV_EVENT, ESP_EVENT_ANY_ID, this), TAG, "failed to register default handler");
+
+    return ESP_OK;
 }
 
 bool Provision::isProvisioned()
 {
     bool provisioned = false;
-
-    ESP_ERROR_CHECK(wifi_prov_mgr_is_provisioned(&provisioned));
+    ESP_RETURN_ON_ERROR(wifi_prov_mgr_is_provisioned(&provisioned), TAG, "failed to check provisioned");
     return provisioned;
 }
 

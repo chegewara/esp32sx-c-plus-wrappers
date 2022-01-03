@@ -2,12 +2,14 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "iot_button.h"
 
 #include "nvs_comp.h"
 #include "ota.h"
-#include "iot_button.h"
 #include "http-client.h"
-#include "wifi.h"
+#include "events.h"
+
+#define USE_WIFI 1
 
 #ifdef CONFIG_IDF_TARGET_ESP32C3
 #define GPIO_PIN 9
@@ -24,9 +26,11 @@
 NVS nvs;
 OTA ota;
 HttpClient client;
-WiFi* wifi_itf;
+#ifdef USE_WIFI
+#include "wifi.h"
+WiFi wifi;
 
-void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
+static void network_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STACONNECTED) {
@@ -39,6 +43,7 @@ void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id
         ESP_LOGI(TAG, "station connected");
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         ESP_LOGI(TAG, "station disconnected");
+        wifi.connect();
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         char myIP[20];
         memset(myIP, 0, 20);
@@ -47,6 +52,53 @@ void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id
         ESP_LOGI(TAG, "got ip: %s", myIP );
     }
 }
+
+#else
+
+// #include "eth-comp.h"
+ETH* eth;
+static bool got_ip = false;
+static void button_single_click_cb(void *arg);
+static void network_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
+{
+    if(event_base == ETH_EVENT){    
+        uint8_t mac_addr[6] = {0};
+        /* we can get the ethernet driver handle from event data */
+        esp_eth_handle_t eth_handle = *(esp_eth_handle_t *)event_data;
+
+        switch (event_id) {
+        case ETHERNET_EVENT_CONNECTED:
+            esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr);
+            ESP_LOGI(TAG, "Ethernet Link Up");
+            ESP_LOGI(TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
+                    mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+            break;
+        case ETHERNET_EVENT_DISCONNECTED:
+            ESP_LOGI(TAG, "Ethernet Link Down");
+            break;
+        case ETHERNET_EVENT_START:
+            ESP_LOGI(TAG, "Ethernet Started");
+            break;
+        case ETHERNET_EVENT_STOP:
+            ESP_LOGI(TAG, "Ethernet Stopped");
+            break;
+        default:
+            break;
+        }
+    } else if(event_base == IP_EVENT) {
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
+        const esp_netif_ip_info_t *ip_info = &event->ip_info;
+
+        ESP_LOGI(TAG, "Ethernet Got IP Address");
+        ESP_LOGI(TAG, "~~~~~~~~~~~");
+        ESP_LOGI(TAG, "ETHIP:   " IPSTR, IP2STR(&ip_info->ip));
+        ESP_LOGI(TAG, "ETHMASK: " IPSTR, IP2STR(&ip_info->netmask));
+        ESP_LOGI(TAG, "ETHGW:   " IPSTR, IP2STR(&ip_info->gw));
+        ESP_LOGI(TAG, "~~~~~~~~~~~");
+        got_ip = true;
+    }
+}
+#endif
 
 static void button_single_click_cb(void *arg)
 {
@@ -86,7 +138,16 @@ static void button_single_click_cb(void *arg)
 
 extern "C" void app_main(void)
 {
-    nvs.init();
+    esp_log_level_set("wifi", ESP_LOG_NONE);
+    ESP_ERROR_CHECK_WITHOUT_ABORT(nvs.init());
+    EventLoop::initDefault();
+#ifdef USE_WIFI
+    EventLoop::registerEventDefault(network_event_handler, WIFI_EVENT, ESP_EVENT_ANY_ID, NULL);
+    EventLoop::registerEventDefault(network_event_handler, IP_EVENT, IP_EVENT_STA_GOT_IP, NULL);
+#else
+    EventLoop::registerEventDefault(network_event_handler, ETH_EVENT, ESP_EVENT_ANY_ID, NULL);
+    EventLoop::registerEventDefault(network_event_handler, IP_EVENT, IP_EVENT_ETH_GOT_IP, NULL);
+#endif
 
     // create gpio button
     button_config_t gpio_btn_cfg = {
@@ -105,9 +166,18 @@ extern "C" void app_main(void)
 
     esp_log_level_set("wifi", ESP_LOG_NONE);
     esp_log_level_set("wifi_init", ESP_LOG_NONE);
+#ifdef USE_WIFI
+    wifi.init();
+    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi.enableSTA(SSID, PASSWORD, true));
+#else
+#define	PIN_PHY_POWER	12
+    eth = new ETH(PIN_PHY_POWER);
+    ESP_ERROR_CHECK_WITHOUT_ABORT(eth->init());
+    ESP_ERROR_CHECK_WITHOUT_ABORT(eth->start());
 
-    wifi_itf = new WiFi();
-    wifi_itf->init();
+    while(!got_ip)
+        vTaskDelay(100);
 
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->enableSTA(SSID, PASSWORD, true));
+    button_single_click_cb(NULL); // esp32 with ETH board, i dont have access to boot button
+#endif
 }

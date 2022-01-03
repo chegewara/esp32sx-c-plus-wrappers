@@ -8,6 +8,7 @@
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "lwip/dns.h"
+#include "esp_check.h"
 
 #include "eth-comp.h"
 
@@ -26,9 +27,6 @@ ETH::~ETH()
 
 esp_err_t ETH::init(uint8_t type)
 {
-    esp_err_t err = ESP_OK;
-    // Initialize TCP/IP network interface (should be called only once in application)
-    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_event_loop_create_default());
     ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_init());
     cfg = ESP_NETIF_DEFAULT_ETH();
     phy_config = (eth_phy_config_t)ETH_PHY_DEFAULT_CONFIG();
@@ -63,42 +61,47 @@ esp_err_t ETH::init(uint8_t type)
 
     if(phy == NULL) return ESP_FAIL;
 
-    return err;
+    return ESP_OK;
 }
 
 esp_err_t ETH::deinit()
 {
-    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_eth_del_netif_glue(glue_handle));
-    return esp_eth_driver_uninstall(eth_handle);
+    ESP_RETURN_ON_ERROR(esp_eth_del_netif_glue(glue_handle), TAG, "");
+    
+    ESP_RETURN_ON_ERROR(esp_eth_driver_uninstall(eth_handle), TAG, "");
+
+    return ESP_OK;
 }
 
 esp_err_t ETH::start()
 {
-    esp_err_t err = ESP_OK;
     config = ETH_DEFAULT_CONFIG(mac, phy);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_eth_driver_install(&config, &eth_handle));
-    /* attach Ethernet driver to TCP/IP stack */
-    glue_handle = esp_eth_new_netif_glue(eth_handle);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_attach(eth_netif, glue_handle));
-    /* start Ethernet driver state machine */
-    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_eth_start(eth_handle));
+    ESP_RETURN_ON_ERROR(esp_eth_driver_install(&config, &eth_handle), TAG, "failed to install driver");
 
-    return err;
+    glue_handle = esp_eth_new_netif_glue(eth_handle);
+    ESP_RETURN_ON_ERROR(esp_netif_attach(eth_netif, glue_handle), TAG, "failed to attach interface");
+
+    ESP_RETURN_ON_ERROR(esp_eth_start(eth_handle), TAG, "failed to start eth");
+
+    return ESP_OK;
 }
 
 esp_err_t ETH::stop()
 {
-    return esp_eth_stop(eth_handle);
+    ESP_RETURN_ON_ERROR(esp_eth_stop(eth_handle), TAG, "failed to stop eth");
+    return ESP_OK;
 }
 
 esp_err_t ETH::getSpeed(void *data)
 {
-    return esp_eth_ioctl(eth_handle, ETH_CMD_G_SPEED, data);
+    ESP_RETURN_ON_ERROR(esp_eth_ioctl(eth_handle, ETH_CMD_G_SPEED, data), TAG, "");
+    return ESP_OK;
 }
 
 esp_err_t ETH::getDuplex(void *data)
 {
-    return esp_eth_ioctl(eth_handle, ETH_CMD_G_DUPLEX_MODE, data);
+    ESP_RETURN_ON_ERROR(esp_eth_ioctl(eth_handle, ETH_CMD_G_DUPLEX_MODE, data), TAG, "");
+    return ESP_OK;
 }
 
 bool ETH::setConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32_t dns1, uint32_t dns2)
@@ -233,5 +236,6 @@ bool ETH::setConfig(const char* local_ip, const char* gateway, const char* subne
 
 esp_err_t ETH::getMAC(uint8_t* mac)
 {
-    return esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac);
+    ESP_RETURN_ON_ERROR(esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac), TAG, "failed to get eth mac");
+    return ESP_OK;
 }

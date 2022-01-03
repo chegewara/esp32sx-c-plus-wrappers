@@ -19,7 +19,7 @@ NOTE: i am always trying to make components compatible with esp-idf master branc
 9. http/s client        `done + wip`
 10. http/s server       `done + wip`
 11. mdns                ``
-12. aws-iot             `wip` (aws mqtt and aws shadow)
+12. aws-iot             `wip` (aws mqtt and aws shadow, there is some problem with aws jobs)
 13. wifi provisioning   `done + wip` (AP only)
 14. mqtt                `done + wip`
 15. ethernet            `done + wip`

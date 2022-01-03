@@ -9,6 +9,7 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "sntp-client.h"
+#include "events.h"
 
 #define TAG "main"
 
@@ -17,7 +18,6 @@
 #define AP1_SSID "test123"
 #define AP2_SSID "test1"
 
-WiFi* wifi_itf;
 NVS nvs;
 SNTP sntp;
 
@@ -50,38 +50,47 @@ static void evt_handler(void* arg, esp_event_base_t event_base, int32_t event_id
     ESP_LOGW("", "Base event: %s, event ID: %d", event_base, event_id);
 }
 
-extern "C" void app_main(void)
+static esp_err_t getAPrecords(uint16_t count)
 {
-    esp_event_loop_create_default();
-    esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, evt_handler, NULL);
-
-    esp_log_level_set("wifi", ESP_LOG_NONE);
-    ESP_ERROR_CHECK(nvs.init());
-    wifi_itf = new WiFi();
-    wifi_itf->init();
-
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->enableAP(AP1_SSID));
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->enableAP(AP2_SSID));
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->enableSTA());
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->setHostname(AP2_SSID, false));
-
-    uint16_t count = 0;
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->scan(&count));
-    wifi_ap_record_t ap_info;
-    wifi_itf->getSTAinfo(&ap_info);
-
-    wifi_ap_record_t ap_records[count] = {}; 
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->getStations(ap_records, &count));
+    wifi_ap_record_t ap_records[count] = {};
+    ESP_RETURN_ON_ERROR(WIFI.getStations(ap_records, &count), TAG, "");
     for (size_t i = 0; i < count; i++)
     {
         ESP_LOGI(TAG, "SSID: %s, power: %d", ap_records[i].ssid, ap_records[i].rssi);
     }
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->enableSTA(SSID, PASSWORD, true));
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->disconnect());
+    return ESP_OK;
+}
+
+extern "C" void app_main(void)
+{
+    esp_err_t ret = ESP_OK;
+    char buffer[80];
+    uint16_t count = 0;
+    wifi_ap_record_t ap_info;
+
+    EventLoop::registerEventDefault(wifi_event_handler, WIFI_EVENT, ESP_EVENT_ANY_ID, NULL);
+    EventLoop::registerEventDefault(wifi_event_handler, IP_EVENT, IP_EVENT_STA_GOT_IP, NULL);
+    esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, evt_handler, NULL);
+
+    esp_log_level_set("wifi", ESP_LOG_NONE);
+    ESP_ERROR_CHECK(nvs.init());
+    ESP_GOTO_ON_ERROR(WIFI.init(), exit, TAG, "");
+
+    ESP_GOTO_ON_ERROR(WIFI.enableAP(AP1_SSID), exit, TAG, "");
+    ESP_GOTO_ON_ERROR(WIFI.enableAP(AP2_SSID), exit, TAG, "");
+    ESP_GOTO_ON_ERROR(WIFI.enableSTA(), exit, TAG, "");
+    ESP_GOTO_ON_ERROR(WIFI.setHostname(AP2_SSID, false), exit, TAG, "");
+
+    ESP_GOTO_ON_ERROR(WIFI.scan(&count), exit, TAG, "");
+    WIFI.getSTAinfo(&ap_info);
+
+    ESP_GOTO_ON_ERROR(getAPrecords(count), exit, TAG, "");
+    ESP_GOTO_ON_ERROR(WIFI.enableSTA(SSID, PASSWORD, true), exit, TAG, "");
+    ESP_GOTO_ON_ERROR(WIFI.disconnect(), exit, TAG, "");
     vTaskDelay(500);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->stop());
+    ESP_GOTO_ON_ERROR(WIFI.stop(), exit, TAG, "");
     vTaskDelay(200);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(wifi_itf->enableSTA(SSID, PASSWORD, true));
+    ESP_GOTO_ON_ERROR(WIFI.enableSTA(SSID, PASSWORD, true), exit, TAG, "");
 
     vTaskDelay(200);
 
@@ -99,8 +108,8 @@ extern "C" void app_main(void)
     vTaskDelay(500);
     printf("time synced => %d\n", sntp.getEpoch());
 
+exit:
     struct tm *timeinfo = sntp.getLocalTime();
-    char buffer[80];
-    strftime(buffer, 80, "%d-%m-%Y %H:%M:%S GMT", timeinfo);
+    strftime(buffer, 80, "%d/%m/%Y %H:%M:%S GMT", timeinfo);
     printf("current time: %s\n", buffer);
 }

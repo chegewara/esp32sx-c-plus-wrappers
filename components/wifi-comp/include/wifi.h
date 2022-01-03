@@ -3,6 +3,9 @@
 #include "esp_err.h"
 #include "esp_netif_types.h"
 #include "esp_wifi_types.h"
+#include <time.h>
+#include <sys/time.h>
+#include "esp_check.h"
 
 class WiFi
 {
@@ -35,3 +38,4 @@ public:
     esp_err_t getAPinfo(wifi_sta_list_t *sta);
 };
 
+extern WiFi WIFI;

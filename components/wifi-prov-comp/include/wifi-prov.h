@@ -15,7 +15,7 @@ public:
     ~Provision();
 
 public:
-    void init();
+    esp_err_t init();
     bool isProvisioned();
     esp_err_t start(wifi_prov_security_t security = WIFI_PROV_SECURITY_0, const char *pop = "abcd1234");
     esp_err_t customCreate(const char* name);
