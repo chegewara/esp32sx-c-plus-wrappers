@@ -66,6 +66,7 @@ extern "C" void app_main(void)
 
     eth = new ETH(PIN_PHY_POWER);
     eth->init();
+    eth->setHostName("test-host");
     eth->start();
 
     uint32_t speed;

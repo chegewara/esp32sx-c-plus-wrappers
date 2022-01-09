@@ -239,3 +239,9 @@ esp_err_t ETH::getMAC(uint8_t* mac)
     ESP_RETURN_ON_ERROR(esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac), TAG, "failed to get eth mac");
     return ESP_OK;
 }
+
+esp_err_t ETH::setHostName(const char* name)
+{
+    ESP_RETURN_ON_ERROR(esp_netif_set_hostname(eth_netif, name), TAG, "failed to set ETH hostname: %s", name);
+    return ESP_OK;
+}
