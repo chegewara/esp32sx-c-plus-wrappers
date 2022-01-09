@@ -1,5 +1,5 @@
 ## Info
-This is set of C++ esp-idf wrappers which can be used in esp-idf, arduino and PIO projects.
+This is set of C++ esp-idf wrappers. All are esp-idf (v5.0) compatible, some can be used in arduino and PIO projects.
 Those components are not meant to be some kind of high quality components to use by all, not yet, its more like speed up of projects i am doing.
 Since its early stage all components are still WiP, with no documentation, some are missing `sdkconfig.defaults` and most does not have good quality or any error checks yet.
 In the future i may add components for different devices.
@@ -31,7 +31,7 @@ NOTE: i am always trying to make components compatible with esp-idf master branc
 21. base64              `done`
 22. event loop          `done + wip`
 23. timers              `done + wip`
-
+24. 
 
 
 ---
@@ -43,6 +43,9 @@ NOTE: i am always trying to make components compatible with esp-idf master branc
 
 1001. azureIoT            `???`
 
+---
 
+## Devices and sensors
+1. DS18B20 - oneWire
 
-If anyone will find this repository useful and would like to support me on paypal, i dont mind.
+If anyone find this repository useful and would like to support me on paypal, i dont mind.
