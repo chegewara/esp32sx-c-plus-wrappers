@@ -21,7 +21,9 @@ void MQTT::init(const char* uri)
     if(!mqtt_cfg)
         mqtt_cfg = new esp_mqtt_client_config_t();
     mqtt_cfg->uri = uri;
+#if ESP_IDF_VERSION_MAJOR > 4
     mqtt_cfg->set_null_client_id = true;
+#endif
 }
 
 void MQTT::init(const char* host, uint32_t port, esp_mqtt_transport_t transport)
@@ -32,7 +34,9 @@ void MQTT::init(const char* host, uint32_t port, esp_mqtt_transport_t transport)
     mqtt_cfg->transport = transport;
     mqtt_cfg->host = host;
     mqtt_cfg->port = port;
+#if ESP_IDF_VERSION_MAJOR > 4
     mqtt_cfg->set_null_client_id = true;
+#endif
 }
 
 void MQTT::init(esp_mqtt_client_config_t *mqtt_cfg)

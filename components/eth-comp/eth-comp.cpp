@@ -35,7 +35,11 @@ esp_err_t ETH::init(uint8_t type)
 
     phy_config.phy_addr = 0;
     phy_config.reset_gpio_num = pin_phy_reset;
+#if ESP_IDF_VERSION_MAJOR > 4
+    esp_rom_gpio_pad_select_gpio(pin_phy_power);
+#else
     gpio_pad_select_gpio(pin_phy_power);
+#endif
     gpio_set_direction(pin_phy_power, GPIO_MODE_OUTPUT);
     gpio_set_level(pin_phy_power, 1);
     vTaskDelay(pdMS_TO_TICKS(10));										
