@@ -36,6 +36,7 @@ public:
     esp_err_t setPower(int8_t power);
     esp_err_t getSTAinfo(wifi_ap_record_t *ap_info);
     esp_err_t getAPinfo(wifi_sta_list_t *sta);
+    esp_err_t setAPConfig(esp_netif_ip_info_t* ip_info);
 };
 
 extern WiFi WIFI;

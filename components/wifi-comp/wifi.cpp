@@ -215,3 +215,15 @@ esp_err_t WiFi::getAPinfo(wifi_sta_list_t *sta)
     ESP_RETURN_ON_ERROR(esp_wifi_ap_get_sta_list(sta), TAG, "failed to get STA list");
     return ESP_OK;
 }
+
+esp_err_t WiFi::setAPConfig(esp_netif_ip_info_t* ip_info)
+{
+    if (!esp_netif_ap)
+        esp_netif_ap = esp_netif_create_default_wifi_ap();
+
+	ESP_RETURN_ON_ERROR(esp_netif_dhcps_stop(esp_netif_ap), TAG, "failed to stop DHCP");
+	ESP_RETURN_ON_ERROR(esp_netif_set_ip_info(esp_netif_ap, ip_info), TAG, "failed to setup IP");
+	ESP_RETURN_ON_ERROR(esp_netif_dhcps_start(esp_netif_ap), TAG, "failed to start DHCP");
+
+    return ESP_OK;
+}
