@@ -121,7 +121,7 @@ esp_err_t WiFi::enableSTA(const char *ssid, const char *pass, bool _connect)
 
 esp_err_t WiFi::connect()
 {
-    ESP_RETURN_ON_ERROR(esp_wifi_connect(), TAG, "failed to connect");
+    if(mode != WIFI_MODE_AP) ESP_RETURN_ON_ERROR(esp_wifi_connect(), TAG, "failed to connect");
     return ESP_OK;
 }
 
@@ -180,8 +180,9 @@ esp_err_t WiFi::start()
     return ESP_OK;
 }
 
-esp_err_t WiFi::setMode(wifi_mode_t mode)
+esp_err_t WiFi::setMode(wifi_mode_t m)
 {
+    mode = m;
     ESP_RETURN_ON_ERROR(esp_wifi_set_mode(mode), TAG, "failed to set mode");
     return ESP_OK;
 }
