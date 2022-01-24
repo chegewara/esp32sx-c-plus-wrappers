@@ -38,6 +38,8 @@ public:
     int getInt(const char* key = NULL);
     double getDouble(const char* key = NULL);
     cJSON* getObject(const char* key, bool sensitive = false);
+    int getArraySize();
+    cJSON* getArrayItem(int);
     bool exist(const char* key);
     char* print(cJSON* obj = NULL);
     static void minify(char* val);

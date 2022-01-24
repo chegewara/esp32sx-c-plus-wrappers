@@ -195,3 +195,17 @@ cJSON* JSON::createObject(cJSON* obj)
 {
     return cJSON_Duplicate(obj, true);
 }
+
+int JSON::getArraySize()
+{
+    if(!cJSON_IsArray(root)) return 0;
+
+    return cJSON_GetArraySize(root);
+}
+
+cJSON* JSON::getArrayItem(int index)
+{
+    if(!cJSON_IsArray(root) || getArraySize() < index) return NULL;
+
+    return cJSON_GetArrayItem(root, index);
+}
