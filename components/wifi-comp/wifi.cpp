@@ -283,7 +283,7 @@ esp_err_t WiFi::setSTAConfig(esp_netif_ip_info_t* ip_info, esp_netif_dns_info_t 
     if (!esp_netif_sta)
         esp_netif_sta = esp_netif_create_default_wifi_ap();
 
-    ESP_RETURN_ON_ERROR(esp_netif_dhcpc_stop(esp_netif_sta), TAG, "failed to stop DHCP");
+    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_dhcpc_stop(esp_netif_sta));
 	ESP_RETURN_ON_ERROR(esp_netif_set_ip_info(esp_netif_sta, ip_info), TAG, "failed to setup IP");
     if(dns) ESP_RETURN_ON_ERROR(esp_netif_set_dns_info(esp_netif_sta, ESP_NETIF_DNS_MAIN, dns), TAG, "failed to setup STA static dns");
     return ESP_OK;
@@ -291,6 +291,11 @@ esp_err_t WiFi::setSTAConfig(esp_netif_ip_info_t* ip_info, esp_netif_dns_info_t 
 
 esp_err_t WiFi::setSTAConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32_t dns)
 {
+    if(local_ip == 0) {
+        ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_dhcpc_start(esp_netif_sta));
+        return ESP_OK;
+    }
+
     esp_netif_ip_info_t info;
     info.ip.addr = local_ip;
     info.gw.addr = gateway;
