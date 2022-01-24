@@ -228,3 +228,124 @@ esp_err_t WiFi::setAPConfig(esp_netif_ip_info_t* ip_info)
 
     return ESP_OK;
 }
+
+esp_err_t WiFi::setAPConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet)
+{
+    esp_netif_ip_info_t info;
+
+    info.ip.addr = local_ip;
+    info.gw.addr = gateway;
+    info.netmask.addr = subnet;
+
+    return setAPConfig(&info);
+}
+
+esp_err_t WiFi::setAPConfig(char* local_ip, char* gateway, char* subnet)
+{
+    esp_netif_ip_info_t ip_info;
+    char* data[4] = {};
+    uint8_t n = 0;
+
+    char *ptr = strtok(local_ip, ".");
+    while(ptr != NULL)
+    {
+        data[n++] = ptr;
+        ptr = strtok(NULL, ".");
+    }
+    if(n != 4) return ESP_FAIL;
+    IP4_ADDR(&ip_info.ip, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
+
+    n = 0;
+    ptr = strtok(gateway, ".");
+    while(ptr != NULL)
+    {
+        data[n++] = ptr;
+        ptr = strtok(NULL, ".");
+    }
+    if(n != 4) return ESP_FAIL;
+    IP4_ADDR(&ip_info.gw, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
+
+    n = 0;
+    ptr = strtok(subnet, ".");
+    while(ptr != NULL)
+    {
+        data[n++] = ptr;
+        ptr = strtok(NULL, ".");
+    }
+    if(n != 4) return ESP_FAIL;
+    IP4_ADDR(&ip_info.netmask, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
+
+    return setAPConfig(&ip_info);
+}
+
+esp_err_t WiFi::setSTAConfig(esp_netif_ip_info_t* ip_info, esp_netif_dns_info_t *dns)
+{
+    if (!esp_netif_sta)
+        esp_netif_sta = esp_netif_create_default_wifi_ap();
+
+    ESP_RETURN_ON_ERROR(esp_netif_dhcpc_stop(esp_netif_sta), TAG, "failed to stop DHCP");
+	ESP_RETURN_ON_ERROR(esp_netif_set_ip_info(esp_netif_sta, ip_info), TAG, "failed to setup IP");
+    if(dns) ESP_RETURN_ON_ERROR(esp_netif_set_dns_info(esp_netif_sta, ESP_NETIF_DNS_MAIN, dns), TAG, "failed to setup STA static dns");
+    return ESP_OK;
+}
+
+esp_err_t WiFi::setSTAConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32_t dns)
+{
+    esp_netif_ip_info_t info;
+    info.ip.addr = local_ip;
+    info.gw.addr = gateway;
+    info.netmask.addr = subnet;
+
+    esp_netif_dns_info_t _dns;
+    _dns.ip.u_addr.ip4.addr = dns;
+
+    return setSTAConfig(&info, &_dns);
+}
+
+esp_err_t WiFi::setSTAConfig(char* local_ip, char* gateway, char* subnet, char* dns)
+{
+    esp_netif_ip_info_t ip_info;
+    char* data[4] = {};
+    uint8_t n = 0;
+    char *ptr = strtok(local_ip, ".");
+    while(ptr != NULL)
+    {
+        data[n++] = ptr;
+        ptr = strtok(NULL, ".");
+    }
+    if(n != 4) return ESP_FAIL;
+    IP4_ADDR(&ip_info.ip, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
+
+    n = 0;
+    ptr = strtok(gateway, ".");
+    while(ptr != NULL)
+    {
+        data[n++] = ptr;
+        ptr = strtok(NULL, ".");
+    }
+    if(n != 4) return ESP_FAIL;
+    IP4_ADDR(&ip_info.gw, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
+
+    n = 0;
+    ptr = strtok(subnet, ".");
+    while(ptr != NULL)
+    {
+        data[n++] = ptr;
+        ptr = strtok(NULL, ".");
+    }
+    if(n != 4) return ESP_FAIL;
+    IP4_ADDR(&ip_info.netmask, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
+
+    n = 0;
+    ptr = strtok(dns, ".");
+    while(ptr != NULL)
+    {
+        data[n++] = ptr;
+        ptr = strtok(NULL, ".");
+    }
+    esp_netif_dns_info_t _dns;
+    if(n != 4) return ESP_FAIL;
+    IP4_ADDR(&_dns.ip.u_addr.ip4, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
+
+    return setSTAConfig(&ip_info, &_dns);
+}

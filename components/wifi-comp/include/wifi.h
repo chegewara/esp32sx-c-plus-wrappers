@@ -37,6 +37,11 @@ public:
     esp_err_t getSTAinfo(wifi_ap_record_t *ap_info);
     esp_err_t getAPinfo(wifi_sta_list_t *sta);
     esp_err_t setAPConfig(esp_netif_ip_info_t* ip_info);
+    esp_err_t setAPConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet);
+    esp_err_t setAPConfig(char* local_ip, char* gateway, char* subnet);
+    esp_err_t setSTAConfig(esp_netif_ip_info_t* ip_info, esp_netif_dns_info_t *dns);
+    esp_err_t setSTAConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32_t dns);
+    esp_err_t setSTAConfig(char* local_ip, char* gateway, char* subnet, char* dns);
 };
 
 extern WiFi WIFI;
