@@ -23,7 +23,7 @@ public:
     esp_err_t run(size_t timeout = 0);
 
     esp_err_t post(esp_event_base_t event_base, int32_t event_id, void *event_data = NULL, size_t event_data_size = 0, TickType_t timeout = 0);
-    static esp_err_t postDefault(esp_event_base_t event_base, int32_t event_id, void *event_data = NULL, size_t event_data_size = 0, TickType_t timeout = 0);
+    static esp_err_t postDefault(esp_event_base_t event_base, int32_t event_id, void *event_data = NULL, size_t event_data_size = 0, TickType_t timeout = 50);
 #if CONFIG_ESP_EVENT_POST_FROM_ISR
     esp_err_t postISR(esp_event_base_t event_base, int32_t event_id, BaseType_t *task_unblocked, void *event_data = NULL, size_t event_data_size = 0);
     static esp_err_t postDefaultISR(esp_event_base_t event_base, int32_t event_id, BaseType_t *task_unblocked, void *event_data = NULL, size_t event_data_size = 0);
