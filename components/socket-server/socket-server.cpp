@@ -23,7 +23,6 @@ void socket_task(void *p)
             if (len < 0)
             {
                 ESP_LOGE(TAG, "Error occurred during receiving: errno %d", errno);
-                break;
             }
             else if (len == 0)
             {
@@ -169,6 +168,8 @@ void Socket::stop()
 {
     if(task_handle != NULL) vTaskDelete(task_handle);
     close();
+    ::close(socketfd);
+    socketfd = -1;
     task_handle = NULL;
 }
 
@@ -188,8 +189,6 @@ void Socket::close()
         socketfda = -1;
     }
     else if(sock_type == UDP_SOCKET_TYPE){
-        ::close(socketfd);
-        socketfd = -1;
     } else {
         printf("not supported\n");
     }
