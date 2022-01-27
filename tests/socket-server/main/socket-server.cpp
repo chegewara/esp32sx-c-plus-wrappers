@@ -47,23 +47,14 @@ static void evt_handler(void* arg, esp_event_base_t event_base, int32_t event_id
     switch (event_id)
     {
     case SOCKET_DATA:{
-        packet_datagram_t* udp = (packet_datagram_t*) event_data;
-        printf("%.*s\n", udp->len, (char*)udp->data);
-        sock.send(udp->data, udp->len, &udp->source_addr);
-        free(udp->data); // always free data buffer when used
+        packet_datagram_t* packet = (packet_datagram_t*) event_data;
+        printf("%.*s", packet->len, (char*)packet->data);
+        sock.send(packet->sockfd, packet->data, packet->len, &packet->source_addr);
+        free(packet->data); // always free data buffer when used
         break;
     }
     case SOCKET_CLOSE:
-        printf("socket is closed now\n");
-        { // OPTIONAL, to show how to create different tye socket
-            sock.setPort(3334);
-            sock.setType(2);
-            sock.create();
-            sock.bind();
-            sock.listen(); // TCP only
-        }
-        sock.start();
-
+        printf("socket is closed now with errno: %d\n", *(int*)event_data);
         break;
     
     default:
@@ -83,10 +74,11 @@ extern "C" void app_main(void)
     WIFI.enableSTA(SSID, PASSWORD, true);
 
     sock.setPort(3333);
-    sock.setType(1);
+    sock.setType(TCP_SOCKET_TYPE);
+    sock.setBufferSize(128); // default buffer size is 256 bytes
     sock.create();
-    sock.bind();
-    sock.listen(); // TCP only
+    sock.bind(); // see comment in source file
+    sock.listen();
     
     sock.start();
 }

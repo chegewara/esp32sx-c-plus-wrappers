@@ -31,14 +31,14 @@ void socket_task(void *p)
             }
             else if (len == 0)
             {
-                ESP_LOGW(TAG, "Connection closed");
+                ESP_LOGD(TAG, "Connection closed");
                 me->onClose(0);
                 me->close(socketfda);
                 break;
             }
             else
             {
-                ESP_LOGI(TAG, "Received %d bytes", len);
+                ESP_LOGD(TAG, "Received %d bytes", len);
                 void* data = calloc(len, 1);
                 packet.len = len;
                 packet.data = data;
@@ -49,7 +49,7 @@ void socket_task(void *p)
     } else if(me->sock_type == UDP_SOCKET_TYPE) {
         while (1)
         {
-            ESP_LOGI(TAG, "Waiting for data");
+            ESP_LOGD(TAG, "Waiting for data");
             memset(rx_buffer, 0, me->buf_size);
             packet_datagram_t packet;
             socklen_t socklen = sizeof(packet.source_addr);
@@ -58,7 +58,7 @@ void socket_task(void *p)
             // Error occurred during receiving
             if (len < 0)
             {
-                ESP_LOGE(TAG, "recvfrom failed: errno %d", errno);
+                ESP_LOGW(TAG, "recvfrom failed: errno %d", errno);
                 me->onClose(errno);
                 me->close();
                 break;
@@ -184,7 +184,7 @@ void Socket::start(int stack, int prio)
 {
     if(xTaskCreate(socket_task, "socket_task", stack, this, prio, &task_handle) == pdTRUE)
     {
-        printf("create task: %p\n", task_handle);
+        ESP_LOGD(TAG, "create task: %p", task_handle);
     }
 }
 
@@ -193,13 +193,14 @@ void Socket::stop()
     if(socketfd < 0) return;
     for (std::vector<int>::iterator it = tcp_sockets.begin(); it != tcp_sockets.end(); ++it)
     {
-        printf("shutdown sockfd: %d, errno: %d\n", ::shutdown(*it, SHUT_RDWR), errno);
-        vTaskDelay(10);
+        int err = ::shutdown(*it, SHUT_RDWR);
+        if(err < 0) ESP_LOGW(TAG, "shutdown sockfd: %d, errno: %d", *it, errno);
     }
     vTaskDelete(task_handle);
 
     tcp_sockets.erase(tcp_sockets.begin(), tcp_sockets.end());
-    printf("close socketfd: %d, errno: %d\n", ::close(socketfd), errno);
+    int err = ::close(socketfd);
+    if(err < 0) ESP_LOGW(TAG, "close socketfd: %d, errno: %d", socketfd, errno);
     socketfd = -1;
 }
 
@@ -214,7 +215,8 @@ void Socket::keepAlive(int sockfd, bool val, int idle, int interval, int count)
 void Socket::close(int sockfd)
 {
     if(sock_type == TCP_SOCKET_TYPE){
-        printf("close sockfd: %d, errno: %d\n", ::close(sockfd), errno);
+        int err = ::close(sockfd);
+        if(err < 0) ESP_LOGW(TAG, "close sockfd: %d, errno: %d", sockfd, errno);
     }
     else if(sock_type == UDP_SOCKET_TYPE){
     } else {
