@@ -16,29 +16,33 @@ void socket_task(void *p)
     uint8_t *rx_buffer = (uint8_t *)calloc(me->buf_size, 1);
 
     if(me->sock_type == TCP_SOCKET_TYPE){
-        me->accept();
+        packet_datagram_t packet;
+        int socketfda = me->accept(&packet.source_addr);
+        packet.sockfd = socketfda;
         while (1){
             memset(rx_buffer, 0, me->buf_size);
-            len = recv(me->socketfda, rx_buffer, sizeof(rx_buffer) - 1, 0);
+            len = recv(socketfda, rx_buffer, me->buf_size, 0);
             if (len < 0)
             {
                 ESP_LOGE(TAG, "Error occurred during receiving: errno %d", errno);
+                me->onClose(errno);
+                me->close(socketfda);
+                break;
             }
             else if (len == 0)
             {
                 ESP_LOGW(TAG, "Connection closed");
-                me->onClose();
+                me->onClose(0);
+                me->close(socketfda);
                 break;
             }
             else
             {
                 ESP_LOGI(TAG, "Received %d bytes", len);
                 void* data = calloc(len, 1);
+                packet.len = len;
+                packet.data = data;
                 memcpy(data, rx_buffer, len);
-                packet_datagram_t packet = {
-                    .len = len,
-                    .data = data
-                };
                 me->onData(&packet, sizeof(packet_datagram_t));
             }
         }
@@ -55,7 +59,8 @@ void socket_task(void *p)
             if (len < 0)
             {
                 ESP_LOGE(TAG, "recvfrom failed: errno %d", errno);
-                me->onClose();
+                me->onClose(errno);
+                me->close();
                 break;
             }
             // Data received
@@ -69,9 +74,6 @@ void socket_task(void *p)
             }
         }
     }
-
-    me->close();
-    printf("delete socket task\n\n");
     free(rx_buffer);
     vTaskDelete(NULL);
 }
@@ -93,6 +95,11 @@ void Socket::setType(int type, int family)
     addr_family = family;
 }
 
+void Socket::setBufferSize(uint16_t size)
+{
+    buf_size = size;
+}
+
 void Socket::create()
 {
     socketfd = socket(addr_family, sock_type, ip_protocol);
@@ -104,9 +111,9 @@ void Socket::setOpt(int level, int name, int *val)
     setsockopt(socketfd, level, name, val, sizeof(int));
 }
 
-void Socket::setConOpt(int level, int name, int *val)
+void Socket::setConOpt(int sockfd, int level, int name, int *val)
 {
-    setsockopt(socketfda, level, name, val, sizeof(int));
+    setsockopt(sockfd, level, name, val, sizeof(int));
 }
 
 void Socket::reuse(bool val)
@@ -114,7 +121,7 @@ void Socket::reuse(bool val)
     setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(bool));
 }
 
-void Socket::bind(uint8_t addr, int port)
+int Socket::bind(uint8_t addr, int port)
 {
     if (port > 0)
         bind_port = port;
@@ -127,10 +134,14 @@ void Socket::bind(uint8_t addr, int port)
     int err = ::bind(socketfd, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
     if (err != 0)
     {
+        // bind may fail with EADDRINUSE when esp32 disconnect server and is trying to re-create and bind socket
+        // in suck case 120 seconds 
         ESP_LOGE(TAG, "Socket unable to bind: errno %d", errno);
         ESP_LOGE(TAG, "IPPROTO: %d", addr_family);
+        return errno;
     }
     ESP_LOGI(TAG, "Socket bound, port %d", bind_port);
+    return 0;
 }
 
 void Socket::listen()
@@ -145,48 +156,65 @@ void Socket::listen()
     }
 }
 
-void Socket::accept()
+int Socket::accept(sockaddr_storage* source_addr)
 {
-    socklen_t addr_len = sizeof(source_addr);
+    int sockfd = -1;
+    socklen_t addr_len = sizeof(*source_addr);
     if (sock_type == TCP_SOCKET_TYPE)
     {
-        socketfda = ::accept(socketfd, (struct sockaddr *)&source_addr, &addr_len);
-        keepAlive(true);
+        do{
+            if(socketfd > 0){
+                fcntl(socketfd, F_SETFL, O_NONBLOCK); // i decided to make accept non blocking, because socketfd may change in meantime
+                sockfd = ::accept(socketfd, (struct sockaddr *)source_addr, &addr_len);
+            }
+            vTaskDelay(10);
+        }while(sockfd < 0);
+        tcp_sockets.push_back(sockfd);
+        keepAlive(sockfd, true);
+        start();
     }
     else if (sock_type == UDP_SOCKET_TYPE)
     {
         ESP_LOGD(TAG, "UDP server don't use accept");
     }
+    return sockfd;
 }
 
 void Socket::start(int stack, int prio)
 {
-    xTaskCreate(socket_task, "socket_task", stack, this, prio, &task_handle);
+    if(xTaskCreate(socket_task, "socket_task", stack, this, prio, &task_handle) == pdTRUE)
+    {
+        printf("create task: %p\n", task_handle);
+    }
 }
 
 void Socket::stop()
 {
-    if(task_handle != NULL) vTaskDelete(task_handle);
-    close();
-    ::close(socketfd);
+    if(socketfd < 0) return;
+    for (std::vector<int>::iterator it = tcp_sockets.begin(); it != tcp_sockets.end(); ++it)
+    {
+        printf("shutdown sockfd: %d, errno: %d\n", ::shutdown(*it, SHUT_RDWR), errno);
+        vTaskDelay(10);
+    }
+    vTaskDelete(task_handle);
+
+    tcp_sockets.erase(tcp_sockets.begin(), tcp_sockets.end());
+    printf("close socketfd: %d, errno: %d\n", ::close(socketfd), errno);
     socketfd = -1;
-    task_handle = NULL;
 }
 
-void Socket::keepAlive(bool val, int idle, int interval, int count)
+void Socket::keepAlive(int sockfd, bool val, int idle, int interval, int count)
 {
-    setConOpt(SOL_SOCKET, SO_KEEPALIVE, (int*)&val);
-    setConOpt(IPPROTO_TCP, TCP_KEEPIDLE, &idle);
-    setConOpt(IPPROTO_TCP, TCP_KEEPINTVL, &interval);
-    setConOpt(IPPROTO_TCP, TCP_KEEPCNT, &count);
+    setConOpt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (int*)&val);
+    setConOpt(sockfd, IPPROTO_TCP, TCP_KEEPIDLE, &idle);
+    setConOpt(sockfd, IPPROTO_TCP, TCP_KEEPINTVL, &interval);
+    setConOpt(sockfd, IPPROTO_TCP, TCP_KEEPCNT, &count);
 }
 
-void Socket::close()
+void Socket::close(int sockfd)
 {
     if(sock_type == TCP_SOCKET_TYPE){
-        shutdown(socketfda, SHUT_RDWR);
-        ::close(socketfda);
-        socketfda = -1;
+        printf("close sockfd: %d, errno: %d\n", ::close(sockfd), errno);
     }
     else if(sock_type == UDP_SOCKET_TYPE){
     } else {
@@ -199,13 +227,13 @@ int Socket::lastError()
     return errno;
 }
 
-void Socket::send(void *data, int len, struct sockaddr_storage* source_addr)
+void Socket::send(int sockfd, void *data, int len, struct sockaddr_storage* source_addr)
 {
     if(sock_type == TCP_SOCKET_TYPE){
         int to_write = len;
         while (to_write > 0)
         {
-            int written = ::send(socketfda, data + (len - to_write), to_write, 0);
+            int written = ::send(sockfd, data + (len - to_write), to_write, 0);
             if (written < 0)
             {
                 ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
@@ -224,9 +252,9 @@ void Socket::send(void *data, int len, struct sockaddr_storage* source_addr)
     }
 }
 
-void Socket::onClose()
+void Socket::onClose(int err)
 {
-    EventLoop::postDefault(SOCKET_EVENT, SOCKET_CLOSE);
+    EventLoop::postDefault(SOCKET_EVENT, SOCKET_CLOSE, &err, sizeof(int));
 }
 
 void Socket::onData(void *data, int len)
