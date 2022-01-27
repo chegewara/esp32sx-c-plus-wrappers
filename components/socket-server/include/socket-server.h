@@ -9,8 +9,9 @@ ESP_EVENT_DECLARE_BASE(SOCKET_EVENT);
 #define UDP_SOCKET_TYPE SOCK_DGRAM
 #define RAW_SOCKET_TYPE SOCK_RAW
 
-#define SOCKET_DATA     0
-#define SOCKET_CLOSE    1
+#define SOCKET_CONNECTED    0
+#define SOCKET_DATA         1
+#define SOCKET_CLOSE        2
 
 typedef struct 
 {
@@ -58,6 +59,7 @@ public:
 
     void close(int sockfd = -1);
 private:
-    void onClose(int err);
+    void onConnect(int sockfd, struct sockaddr_storage* source_addr);
     void onData(void* data, int len);
+    void onClose(int err);
 };

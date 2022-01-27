@@ -170,6 +170,7 @@ int Socket::accept(sockaddr_storage* source_addr)
             vTaskDelay(10);
         }while(sockfd < 0);
         tcp_sockets.push_back(sockfd);
+        onConnect(sockfd, source_addr);
         keepAlive(sockfd, true);
         start();
     }
@@ -193,8 +194,9 @@ void Socket::stop()
     if(socketfd < 0) return;
     for (std::vector<int>::iterator it = tcp_sockets.begin(); it != tcp_sockets.end(); ++it)
     {
-        int err = ::shutdown(*it, SHUT_RDWR);
-        if(err < 0) ESP_LOGW(TAG, "shutdown sockfd: %d, errno: %d", *it, errno);
+        int sockfd = *it;
+        int err = ::shutdown(sockfd, SHUT_RDWR);
+        if(err < 0) ESP_LOGW(TAG, "shutdown sockfd: %d, errno: %d", sockfd, errno);
     }
     vTaskDelete(task_handle);
 
@@ -254,12 +256,21 @@ void Socket::send(int sockfd, void *data, int len, struct sockaddr_storage* sour
     }
 }
 
-void Socket::onClose(int err)
+void Socket::onConnect(int sockfd, struct sockaddr_storage* source_addr)
 {
-    EventLoop::postDefault(SOCKET_EVENT, SOCKET_CLOSE, &err, sizeof(int));
+    packet_datagram_t packet = {
+        .sockfd = sockfd,
+    };
+    memcpy(&packet.source_addr, source_addr, sizeof(struct sockaddr_storage));
+    EventLoop::postDefault(SOCKET_EVENT, SOCKET_CONNECTED, &packet, sizeof(packet_datagram_t), 100);
 }
 
 void Socket::onData(void *data, int len)
 {
     EventLoop::postDefault(SOCKET_EVENT, SOCKET_DATA, data, len, 100);
+}
+
+void Socket::onClose(int err)
+{
+    EventLoop::postDefault(SOCKET_EVENT, SOCKET_CLOSE, &err, sizeof(int));
 }
