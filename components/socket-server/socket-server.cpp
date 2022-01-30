@@ -53,7 +53,7 @@ void socket_task(void *p)
             memset(rx_buffer, 0, me->buf_size);
             packet_datagram_t packet;
             socklen_t socklen = sizeof(packet.source_addr);
-            int len = recvfrom(me->socketfd, rx_buffer, sizeof(rx_buffer), 0, (struct sockaddr *)&packet.source_addr, &socklen);
+            int len = recvfrom(me->socketfd, rx_buffer, me->buf_size, 0, (struct sockaddr *)&packet.source_addr, &socklen);
 
             // Error occurred during receiving
             if (len < 0)
@@ -69,6 +69,7 @@ void socket_task(void *p)
                 void* data = calloc(len, 1);
                 packet.len = len;
                 packet.data = data;
+                packet.sockfd = me->socketfd;
                 memcpy(data, rx_buffer, len);
                 me->onData(&packet, sizeof(packet_datagram_t));
             }
@@ -106,14 +107,14 @@ void Socket::create()
     reuse(true);
 }
 
-void Socket::setOpt(int level, int name, int *val)
+void Socket::setOpt(int level, int name, void* val, int len)
 {
-    setsockopt(socketfd, level, name, val, sizeof(int));
+    setsockopt(socketfd, level, name, val, len);
 }
 
-void Socket::setConOpt(int sockfd, int level, int name, int *val)
+void Socket::setConOpt(int sockfd, int level, int name, void* val, int len)
 {
-    setsockopt(sockfd, level, name, val, sizeof(int));
+    setsockopt(sockfd, level, name, val, len);
 }
 
 void Socket::reuse(bool val)
@@ -140,7 +141,7 @@ int Socket::bind(uint8_t addr, int port)
         ESP_LOGE(TAG, "IPPROTO: %d", addr_family);
         return errno;
     }
-    ESP_LOGI(TAG, "Socket bound, port %d", bind_port);
+    ESP_LOGD(TAG, "Socket bound, port %d", bind_port);
     return 0;
 }
 
@@ -208,10 +209,10 @@ void Socket::stop()
 
 void Socket::keepAlive(int sockfd, bool val, int idle, int interval, int count)
 {
-    setConOpt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (int*)&val);
-    setConOpt(sockfd, IPPROTO_TCP, TCP_KEEPIDLE, &idle);
-    setConOpt(sockfd, IPPROTO_TCP, TCP_KEEPINTVL, &interval);
-    setConOpt(sockfd, IPPROTO_TCP, TCP_KEEPCNT, &count);
+    setConOpt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (bool*)&val, sizeof(bool));
+    setConOpt(sockfd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(int));
+    setConOpt(sockfd, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(int));
+    setConOpt(sockfd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(int));
 }
 
 void Socket::close(int sockfd)
@@ -258,9 +259,9 @@ void Socket::send(int sockfd, void *data, int len, struct sockaddr_storage* sour
 
 void Socket::onConnect(int sockfd, struct sockaddr_storage* source_addr)
 {
-    packet_datagram_t packet = {
-        .sockfd = sockfd,
-    };
+    packet_datagram_t packet = { };
+    packet.sockfd = sockfd;
+
     memcpy(&packet.source_addr, source_addr, sizeof(struct sockaddr_storage));
     EventLoop::postDefault(SOCKET_EVENT, SOCKET_CONNECTED, &packet, sizeof(packet_datagram_t), 100);
 }
@@ -273,4 +274,91 @@ void Socket::onData(void *data, int len)
 void Socket::onClose(int err)
 {
     EventLoop::postDefault(SOCKET_EVENT, SOCKET_CLOSE, &err, sizeof(int));
+}
+
+int Socket::getSocket()
+{
+    return socketfd;
+}
+
+int Socket::createMulticast(uint8_t ttl)
+{
+    struct sockaddr_in saddr = { };
+    int err = 0;
+
+    socketfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+    if (socketfd < 0) {
+        ESP_LOGE(TAG, "Failed to create socket. Error %d", errno);
+        return errno;
+    }
+
+    saddr.sin_family = PF_INET;
+    saddr.sin_port = htons(bind_port);
+    saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    err = ::bind(socketfd, (struct sockaddr *)&saddr, sizeof(struct sockaddr_in));
+    if (err < 0) {
+        ESP_LOGE(TAG, "Failed to bind socket. Error %d", errno);
+        return errno;
+    }
+
+    setsockopt(socketfd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(uint8_t));
+    if (err < 0) {
+        ESP_LOGE(TAG, "Failed to set IP_MULTICAST_TTL. Error %d", errno);
+        return errno;
+    }
+
+    return 0;
+}
+
+int Socket::addToGroup(const char* group)
+{
+    struct ip_mreq imreq = { };
+    int err = 0;
+    imreq.imr_interface.s_addr = IPADDR_ANY;
+
+    err = inet_aton(group, &imreq.imr_multiaddr.s_addr);
+    if (err != 1) {
+        ESP_LOGE(TAG, "Configured IPV4 multicast address '%s' is invalid.", group);
+        goto err;
+    }
+    ESP_LOGD(TAG, "Configured IPV4 Multicast address %s", inet_ntoa(imreq.imr_multiaddr.s_addr));
+    if (!IP_MULTICAST(ntohl(imreq.imr_multiaddr.s_addr))) {
+        ESP_LOGW(TAG, "Configured IPV4 multicast address '%s' is not a valid multicast address. This will probably not work.", group);
+    }
+
+    err = setsockopt(socketfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &imreq, sizeof(struct ip_mreq));
+    if (err < 0) {
+        ESP_LOGE(TAG, "Failed to set IP_ADD_MEMBERSHIP. Error %d", errno);
+        goto err;
+    }
+
+ err:
+    return errno;
+}
+
+void Socket::publish(const char* group, void *data, int len)
+{
+    struct addrinfo hints = { };
+    hints.ai_flags = AI_PASSIVE;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_family = addr_family;
+
+    struct addrinfo *res;
+
+    int err = getaddrinfo(group, NULL, &hints, &res);
+    if (err < 0) {
+        ESP_LOGE(TAG, "getaddrinfo() failed for IPV4 destination address. error: %d", err);
+        return;
+    }
+    if (res == 0) {
+        ESP_LOGE(TAG, "getaddrinfo() did not return any addresses");
+        return;
+    }
+    ((struct sockaddr_in *)res->ai_addr)->sin_port = htons(bind_port);
+
+    err = sendto(socketfd, data, len, 0, res->ai_addr, res->ai_addrlen);
+    freeaddrinfo(res);
+    if (err < 0) {
+        ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d", errno);
+    }
 }

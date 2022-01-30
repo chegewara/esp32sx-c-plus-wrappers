@@ -1,6 +1,9 @@
 #pragma once
 #include <vector>
+#include "lwip/err.h"
 #include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include <lwip/netdb.h>
 #include "events.h"
 
 ESP_EVENT_DECLARE_BASE(SOCKET_EVENT);
@@ -43,8 +46,8 @@ public:
     void setBufferSize(uint16_t size);
 
     void create();
-    void setOpt(int level, int name, int* val);
-    void setConOpt(int sockfd, int level, int name, int* val);
+    void setOpt(int level, int name, void* val, int len);
+    void setConOpt(int sockfd, int level, int name, void* val, int len);
     // https://man7.org/linux/man-pages/man7/tcp.7.html
     void reuse(bool val);
     void keepAlive(int sockfd, bool val, int idle = 5, int interval = 5, int count = 5);    
@@ -58,6 +61,12 @@ public:
     int lastError();
 
     void close(int sockfd = -1);
+
+    int createMulticast(uint8_t ttl = 60);
+    int addToGroup(const char* group);
+    void publish(const char* group, void *data, int len);
+    int getSocket();
+
 private:
     void onConnect(int sockfd, struct sockaddr_storage* source_addr);
     void onData(void* data, int len);
