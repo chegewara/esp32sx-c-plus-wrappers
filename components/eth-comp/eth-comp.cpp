@@ -169,10 +169,10 @@ bool ETH::setConfig(const char* local_ip, const char* gateway, const char* subne
     ip_addr_t _dns1;
     ip_addr_t _dns2;
     ipaddr_aton(local_ip, &_local_ip);
-    ipaddr_aton(local_ip, &_gateway);
-    ipaddr_aton(local_ip, &_subnet);
-    ipaddr_aton(local_ip, &_dns1);
-    ipaddr_aton(local_ip, &_dns2);
+    ipaddr_aton(gateway, &_gateway);
+    ipaddr_aton(subnet, &_subnet);
+    ipaddr_aton(dns1, &_dns1);
+    ipaddr_aton(dns2, &_dns2);
 
     return setConfig(_local_ip.u_addr.ip4.addr, _gateway.u_addr.ip4.addr, _subnet.u_addr.ip4.addr, _dns1.u_addr.ip4.addr, _dns2.u_addr.ip4.addr);
 }
