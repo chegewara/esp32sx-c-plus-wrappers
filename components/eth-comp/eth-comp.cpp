@@ -163,79 +163,18 @@ bool ETH::setConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32
 
 bool ETH::setConfig(const char* local_ip, const char* gateway, const char* subnet, const char* dns1, const char* dns2)
 {
-    char* data[4] = {};
-    uint8_t n = 0;
-    char *ptr = strtok((char*)local_ip, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    uint32_t _local_ip = 0;
-    if (n == 4)
-    {
-        _local_ip = atoi(data[0]) + (atoi(data[1]) << 8) + (atoi(data[2]) << 16) + (atoi(data[3]) << 24);
-    }
-    printf("IP: %x\n", _local_ip);    
+    ip_addr_t _local_ip;
+    ip_addr_t _gateway;
+    ip_addr_t _subnet;
+    ip_addr_t _dns1;
+    ip_addr_t _dns2;
+    ipaddr_aton(local_ip, &_local_ip);
+    ipaddr_aton(local_ip, &_gateway);
+    ipaddr_aton(local_ip, &_subnet);
+    ipaddr_aton(local_ip, &_dns1);
+    ipaddr_aton(local_ip, &_dns2);
 
-    n = 0;
-    ptr = strtok((char*)gateway, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    uint32_t _gateway = 0;
-    if (n == 4)
-    {
-        _gateway = atoi(data[0]) + (atoi(data[1]) << 8) + (atoi(data[2]) << 16) + (atoi(data[3]) << 24);
-    }
-    printf("gateway: %x\n", _gateway);
-
-    n = 0;
-    ptr = strtok((char*)subnet, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    uint32_t _subnet = 0;
-        if (n == 4)
-    {
-        _subnet = atoi(data[0]) + (atoi(data[1]) << 8) + (atoi(data[2]) << 16) + (atoi(data[3]) << 24);
-    }
-    printf("subnet: %x\n", _subnet);
-
-    n = 0;
-    ptr = strtok((char*)dns1, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    uint32_t _dns1 = 0;
-    if (n == 4)
-    {
-        _dns1 = atoi(data[0]) + (atoi(data[1]) << 8) + (atoi(data[2]) << 16) + (atoi(data[3]) << 24);
-    }
-    printf("DNS1: %u\n", _dns1);
-
-    n = 0;
-    ptr = strtok((char*)dns2, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    uint32_t _dns2 = 0;
-    if (n == 4)
-    {
-        _dns2 = atoi(data[0]) + (atoi(data[1]) << 8) + (atoi(data[2]) << 16) + (atoi(data[3]) << 24);
-    }
-    printf("DNS2: %u\n", _dns2);
-
-
-    return setConfig(_local_ip, _gateway, _subnet, _dns1, _dns2);
+    return setConfig(_local_ip.u_addr.ip4.addr, _gateway.u_addr.ip4.addr, _subnet.u_addr.ip4.addr, _dns1.u_addr.ip4.addr, _dns2.u_addr.ip4.addr);
 }
 
 esp_err_t ETH::getMAC(uint8_t* mac)

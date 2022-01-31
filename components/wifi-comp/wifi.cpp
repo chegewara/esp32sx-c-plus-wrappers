@@ -242,40 +242,14 @@ esp_err_t WiFi::setAPConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet
 
 esp_err_t WiFi::setAPConfig(char* local_ip, char* gateway, char* subnet)
 {
-    esp_netif_ip_info_t ip_info;
-    char* data[4] = {};
-    uint8_t n = 0;
+    ip_addr_t ip;
+    ip_addr_t gw;
+    ip_addr_t sub;
+    ipaddr_aton(local_ip, &ip);
+    ipaddr_aton(local_ip, &gw);
+    ipaddr_aton(local_ip, &sub);
 
-    char *ptr = strtok(local_ip, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    if(n != 4) return ESP_FAIL;
-    IP4_ADDR(&ip_info.ip, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
-
-    n = 0;
-    ptr = strtok(gateway, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    if(n != 4) return ESP_FAIL;
-    IP4_ADDR(&ip_info.gw, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
-
-    n = 0;
-    ptr = strtok(subnet, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    if(n != 4) return ESP_FAIL;
-    IP4_ADDR(&ip_info.netmask, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
-
-    return setAPConfig(&ip_info);
+    return setAPConfig(ip.u_addr.ip4.addr, gw.u_addr.ip4.addr, sub.u_addr.ip4.addr);
 }
 
 esp_err_t WiFi::setSTAConfig(esp_netif_ip_info_t* ip_info, esp_netif_dns_info_t *dns)
@@ -309,48 +283,14 @@ esp_err_t WiFi::setSTAConfig(uint32_t local_ip, uint32_t gateway, uint32_t subne
 
 esp_err_t WiFi::setSTAConfig(char* local_ip, char* gateway, char* subnet, char* dns)
 {
-    esp_netif_ip_info_t ip_info;
-    char* data[4] = {};
-    uint8_t n = 0;
-    char *ptr = strtok(local_ip, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    if(n != 4) return ESP_FAIL;
-    IP4_ADDR(&ip_info.ip, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
+    ip_addr_t ip;
+    ip_addr_t gw;
+    ip_addr_t sub;
+    ip_addr_t _dns;
+    ipaddr_aton(local_ip, &ip);
+    ipaddr_aton(gateway, &gw);
+    ipaddr_aton(subnet, &sub);
+    ipaddr_aton(dns, &_dns);
 
-    n = 0;
-    ptr = strtok(gateway, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    if(n != 4) return ESP_FAIL;
-    IP4_ADDR(&ip_info.gw, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
-
-    n = 0;
-    ptr = strtok(subnet, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    if(n != 4) return ESP_FAIL;
-    IP4_ADDR(&ip_info.netmask, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
-
-    n = 0;
-    ptr = strtok(dns, ".");
-    while(ptr != NULL)
-    {
-        data[n++] = ptr;
-        ptr = strtok(NULL, ".");
-    }
-    esp_netif_dns_info_t _dns;
-    if(n != 4) return ESP_FAIL;
-    IP4_ADDR(&_dns.ip.u_addr.ip4, atoi(data[0]), atoi(data[1]), atoi(data[2]), atoi(data[3]));
-
-    return setSTAConfig(&ip_info, &_dns);
+    return setSTAConfig(ip.u_addr.ip4.addr, gw.u_addr.ip4.addr, sub.u_addr.ip4.addr, _dns.u_addr.ip4.addr);
 }
