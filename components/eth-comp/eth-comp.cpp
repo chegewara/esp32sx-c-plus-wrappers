@@ -163,11 +163,12 @@ bool ETH::setConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet, uint32
 
 bool ETH::setConfig(const char* local_ip, const char* gateway, const char* subnet, const char* dns1, const char* dns2)
 {
-    ip_addr_t _local_ip;
-    ip_addr_t _gateway;
-    ip_addr_t _subnet;
-    ip_addr_t _dns1;
-    ip_addr_t _dns2;
+    printf("ETH IP: %s\n", local_ip);
+    ip_addr_t _local_ip = {};
+    ip_addr_t _gateway = {};
+    ip_addr_t _subnet = {};
+    ip_addr_t _dns1 = {};
+    ip_addr_t _dns2 = {};
     ipaddr_aton(local_ip, &_local_ip);
     ipaddr_aton(gateway, &_gateway);
     ipaddr_aton(subnet, &_subnet);

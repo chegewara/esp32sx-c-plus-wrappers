@@ -242,9 +242,9 @@ esp_err_t WiFi::setAPConfig(uint32_t local_ip, uint32_t gateway, uint32_t subnet
 
 esp_err_t WiFi::setAPConfig(char* local_ip, char* gateway, char* subnet)
 {
-    ip_addr_t ip;
-    ip_addr_t gw;
-    ip_addr_t sub;
+    ip_addr_t ip = {};
+    ip_addr_t gw = {};
+    ip_addr_t sub = {};
     ipaddr_aton(local_ip, &ip);
     ipaddr_aton(local_ip, &gw);
     ipaddr_aton(local_ip, &sub);
@@ -283,10 +283,10 @@ esp_err_t WiFi::setSTAConfig(uint32_t local_ip, uint32_t gateway, uint32_t subne
 
 esp_err_t WiFi::setSTAConfig(char* local_ip, char* gateway, char* subnet, char* dns)
 {
-    ip_addr_t ip;
-    ip_addr_t gw;
-    ip_addr_t sub;
-    ip_addr_t _dns;
+    ip_addr_t ip {};
+    ip_addr_t gw {};
+    ip_addr_t sub {};
+    ip_addr_t _dns {};
     ipaddr_aton(local_ip, &ip);
     ipaddr_aton(gateway, &gw);
     ipaddr_aton(subnet, &sub);
