@@ -138,9 +138,11 @@ esp_err_t WiFi::setHostname(const char *name, bool sta)
         if (esp_netif_sta == NULL)
             return ESP_ERR_WIFI_NOT_INIT;
         ESP_RETURN_ON_ERROR(esp_netif_set_hostname(esp_netif_sta, name), TAG, "failed to set STA hostname: %s", name);
-    } else if (esp_netif_ap == NULL)
-        return ESP_ERR_WIFI_NOT_INIT;
-    ESP_RETURN_ON_ERROR(esp_netif_set_hostname(esp_netif_ap, name), TAG, "failed to set AP hostname: %s", name);
+    } else {
+        if (esp_netif_ap == NULL)
+            return ESP_ERR_WIFI_NOT_INIT;
+        ESP_RETURN_ON_ERROR(esp_netif_set_hostname(esp_netif_ap, name), TAG, "failed to set AP hostname: %s", name);
+    }
     return ESP_OK;
 }
 
