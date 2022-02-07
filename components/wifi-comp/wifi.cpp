@@ -248,8 +248,8 @@ esp_err_t WiFi::setAPConfig(char* local_ip, char* gateway, char* subnet)
     ip_addr_t gw = {};
     ip_addr_t sub = {};
     ipaddr_aton(local_ip, &ip);
-    ipaddr_aton(local_ip, &gw);
-    ipaddr_aton(local_ip, &sub);
+    ipaddr_aton(gateway, &gw);
+    ipaddr_aton(subnet, &sub);
 
     return setAPConfig(ip.u_addr.ip4.addr, gw.u_addr.ip4.addr, sub.u_addr.ip4.addr);
 }
