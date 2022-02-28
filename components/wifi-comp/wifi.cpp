@@ -138,9 +138,11 @@ esp_err_t WiFi::setHostname(const char *name, bool sta)
         if (esp_netif_sta == NULL)
             return ESP_ERR_WIFI_NOT_INIT;
         ESP_RETURN_ON_ERROR(esp_netif_set_hostname(esp_netif_sta, name), TAG, "failed to set STA hostname: %s", name);
-    } else if (esp_netif_ap == NULL)
-        return ESP_ERR_WIFI_NOT_INIT;
-    ESP_RETURN_ON_ERROR(esp_netif_set_hostname(esp_netif_ap, name), TAG, "failed to set AP hostname: %s", name);
+    } else {
+        if (esp_netif_ap == NULL)
+            return ESP_ERR_WIFI_NOT_INIT;
+        ESP_RETURN_ON_ERROR(esp_netif_set_hostname(esp_netif_ap, name), TAG, "failed to set AP hostname: %s", name);
+    }
     return ESP_OK;
 }
 
@@ -246,8 +248,8 @@ esp_err_t WiFi::setAPConfig(char* local_ip, char* gateway, char* subnet)
     ip_addr_t gw = {};
     ip_addr_t sub = {};
     ipaddr_aton(local_ip, &ip);
-    ipaddr_aton(local_ip, &gw);
-    ipaddr_aton(local_ip, &sub);
+    ipaddr_aton(gateway, &gw);
+    ipaddr_aton(subnet, &sub);
 
     return setAPConfig(ip.u_addr.ip4.addr, gw.u_addr.ip4.addr, sub.u_addr.ip4.addr);
 }
