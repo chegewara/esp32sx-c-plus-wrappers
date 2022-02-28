@@ -42,12 +42,13 @@ esp_err_t ETH::init(uint8_t type)
 #endif
     gpio_set_direction(pin_phy_power, GPIO_MODE_OUTPUT);
     gpio_set_level(pin_phy_power, 1);
-    vTaskDelay(pdMS_TO_TICKS(10));										
+    vTaskDelay(pdMS_TO_TICKS(10));
 
-    mac_config.smi_mdc_gpio_num = 23;
-    mac_config.smi_mdio_gpio_num = 18;
 #if CONFIG_ETH_USE_ESP32_EMAC
-    mac = esp_eth_mac_new_esp32(&mac_config);
+    eth_esp32_emac_config_t esp32_emac_config = ETH_ESP32_EMAC_DEFAULT_CONFIG();
+    esp32_emac_config.smi_mdc_gpio_num = 23;
+    esp32_emac_config.smi_mdio_gpio_num = 18;
+    mac = esp_eth_mac_new_esp32(&esp32_emac_config, &mac_config);
 #endif
     if(type == ETH_PHY_IP101){
         phy = esp_eth_phy_new_ip101(&phy_config);
